@@ -18,6 +18,6 @@ This repo's own `.claude/settings.json` carries a `SessionStart` hook that shoul
 
 Asgard is **declared law** — `Norse.Abstractions`: contracts and the rules every realm must honor. No implementations live here, by design — plugin interfaces (`IWebHostPlugin`/`IWorkerHostPlugin`), the repository contract family, and the attribute model. It is the topmost layer of the Norse Architecture dependency chain: every other realm rides on Asgard; Asgard rides on nothing.
 
-This repo is currently a bare shell (LICENSE only) — no specs have converged here yet. Before writing any code: brainstorm → spec → plan, recorded in `../Glitnir/docs/superpowers/`, per the org's spec-first discipline. Do not scaffold a project structure ahead of a converged spec.
+This repo is currently a bare shell (LICENSE only) — no specs have converged here yet. Before writing any code: brainstorm → spec → plan, recorded in `../Glitnir/docs/Asgard/`, per the org's spec-first discipline. Do not scaffold a project structure ahead of a converged spec.
 
 See `../Bifrost/CLAUDE.md` (§2 The Naming Model) and `../Glitnir/CLAUDE.md` (§1 Bounded Context Map) for the full realm table and how Asgard fits the rest of the cosmos.
