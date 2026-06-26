@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<ItemGroup>
+		<ProjectReference Include="../../src/Abstractions.Web.Server/Abstractions.Web.Server.csproj" />
+	</ItemGroup>
+</Project>

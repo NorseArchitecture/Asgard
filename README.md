@@ -2,11 +2,22 @@
 
 > The fortress of the Æsir, where law is declared and the cosmos answers to it.
 
-Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contracts and rules every realm must honor. No implementations live here, by design — plugin interfaces (`IWebHostPlugin`/`IWorkerHostPlugin`), the repository contract family, and the attribute model. It is the topmost layer of the dependency chain: every other realm rides on Asgard; Asgard rides on nothing.
+Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contracts and rules every realm must honor. No implementations live here, by design. Six assemblies, split by dependency wall and consumer context:
+
+| Assembly | Upstream Dependencies | Purpose |
+|---|---|---|
+| `Norse.Abstractions.Contracts` | none | `NorsePrincipal`, `Population`, published event interfaces, `IAccountApi` |
+| `Norse.Abstractions.Components` | none | Razor component base abstractions (MAUI/WASM-safe — no server-side infrastructure) |
+| `Norse.Abstractions.Backend` | `Norse.Primitives`, `Norse.Abstractions.Contracts` | Shared server-side contracts (egress contracts under `.Egress` namespace) |
+| `Norse.Abstractions.Worker` | `Norse.Abstractions.Backend` (transitive) | `IWorkerHostPlugin`, `ICommandRepository<T>`, `ICachedRepository<T>`, NServiceBus seams |
+| `Norse.Abstractions.Web.Server` | `Norse.Abstractions.Backend` (transitive) | `IWebHostPlugin`, `IDocumentRepository<T>`, mediator law |
+| `Norse.Abstractions.Migrations` | none | `IMigrationContributor` (EF-free) |
+
+Worker and Web.Server are mutually invisible — neither references the other.
 
 ## Status
 
-This realm is currently a bare shell — no code, no specs converged yet. Design happens first: brainstorm → spec → plan, recorded in Glitnir's `docs/Asgard/`, before any project is scaffolded here.
+Scaffolded — six source projects and six test projects, wired into `Asgard.slnx`. First implementation in progress: the egress contracts slice (`Norse.Abstractions.Backend.Egress`). Design for each subsequent type surface follows the spec-first discipline: brainstorm → spec → plan in [Glitnir](https://github.com/NorseArchitecture/Glitnir)'s `docs/Asgard/`, greenlit by the human, then code.
 
 ## The cosmos
 

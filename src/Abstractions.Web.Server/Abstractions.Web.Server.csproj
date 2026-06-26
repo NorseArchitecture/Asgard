@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<Description>Norse web-server abstractions: IWebHostPlugin, the document repository surface (IDocumentRepository&lt;T&gt;), and mediator law (ICommandRequest&lt;T&gt;, validator and authorizer contracts) — the server-side law for the web tier. Mutually invisible with Norse.Abstractions.Worker.</Description>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="../Abstractions.Backend/Abstractions.Backend.csproj" />
+	</ItemGroup>
+</Project>

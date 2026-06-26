@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<Description>Norse worker abstractions: IWorkerHostPlugin, command and cached repository surfaces (ICommandRepository&lt;T&gt;, ICachedRepository&lt;T&gt;), and NServiceBus handler contract seams — the server-side law for the system-of-record tier. Mutually invisible with Norse.Abstractions.Web.Server.</Description>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="../Abstractions.Backend/Abstractions.Backend.csproj" />
+	</ItemGroup>
+</Project>
