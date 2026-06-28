@@ -2,6 +2,10 @@
 
 > The fortress of the Æsir, where law is declared and the cosmos answers to it.
 
+![Asgard — the golden fortress of the Æsir, where the gods hold council and the laws that govern all nine realms are declared](https://github.com/user-attachments/assets/a5e0cfad-2b98-4f7b-a140-c7ca74e25bd3 "Asgard — the fortress where law is declared and the cosmos answers to it")
+
+*Image credit: [@norsemythologyclips](https://www.instagram.com/norsemythologyclips/) — go follow them.*
+
 Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contracts and rules every realm must honor. No implementations live here, by design. Six assemblies, split by dependency wall and consumer context:
 
 | Assembly | Upstream Dependencies | Purpose |
