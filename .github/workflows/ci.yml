@@ -11,5 +11,6 @@ permissions:
 jobs:
   gate:
     uses: NorseArchitecture/.github/.github/workflows/ci-build-test.yml@master
+    secrets: inherit
     with:
       minimum_coverage: 0
