@@ -9,6 +9,7 @@
 	</Folder>
 	<Folder Name="/src/">
 		<File Path="src/Directory.Build.props" />
+		<File Path="src/Directory.Build.targets" />
 		<Project Path="src/Abstractions.Contracts/Abstractions.Contracts.csproj" />
 		<Project Path="src/Abstractions.Components/Abstractions.Components.csproj" />
 		<Project Path="src/Abstractions.Backend/Abstractions.Backend.csproj" />
@@ -18,6 +19,7 @@
 	</Folder>
 	<Folder Name="/tests/">
 		<File Path="tests/Directory.Build.props" />
+		<File Path="src/Directory.Build.targets" />
 		<Project Path="tests/Abstractions.Contracts.Tests/Abstractions.Contracts.Tests.csproj" />
 		<Project Path="tests/Abstractions.Components.Tests/Abstractions.Components.Tests.csproj" />
 		<Project Path="tests/Abstractions.Backend.Tests/Abstractions.Backend.Tests.csproj" />
