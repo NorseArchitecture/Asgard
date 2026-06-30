@@ -3,7 +3,7 @@ namespace Norse.Abstractions.Migrations.Tests;
 public sealed class IMigrationContributorTests
 {
 	[Fact]
-	public async Task MigrateAsync_invokes_concrete_implementation()
+	async Task MigrateAsync_invokes_concrete_implementation()
 	{
 		StubContributor stub = new();
 
@@ -13,7 +13,7 @@ public sealed class IMigrationContributorTests
 	}
 
 	[Fact]
-	public void Name_returns_concrete_value()
+	void Name_returns_concrete_value()
 	{
 		StubContributor stub = new();
 
