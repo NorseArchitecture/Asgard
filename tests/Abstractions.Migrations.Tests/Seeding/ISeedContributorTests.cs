@@ -24,13 +24,21 @@ public sealed class ISeedContributorTests
 	}
 
 	[Fact]
-	void ConfigureServices_is_callable_as_static_interface_member()
+	void ConfigureServices_is_callable_as_static_interface_member_with_explicit_override()
 	{
 		ServiceCollection services = new();
 
 		StubSeedContributor.ConfigureServices(services);
 
 		services.ShouldBeEmpty();
+	}
+
+	[Fact]
+	void ConfigureServices_can_be_omitted_by_contributors_that_need_nothing()
+	{
+		StubSeedContributorWithoutOverride stub = new();
+
+		stub.Name.ShouldBe("StubNoOverride");
 	}
 
 	sealed class StubSeedContributor : ISeedContributor
@@ -45,5 +53,15 @@ public sealed class ISeedContributorTests
 		}
 
 		public static void ConfigureServices(IServiceCollection services) { }
+	}
+
+	sealed class StubSeedContributorWithoutOverride : ISeedContributor
+	{
+		public string Name => "StubNoOverride";
+
+		public Task SeedAsync(CancellationToken cancellationToken)
+		{
+			return Task.CompletedTask;
+		}
 	}
 }

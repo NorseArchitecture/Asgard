@@ -24,8 +24,9 @@ public interface ISeedContributor
 	/// <summary>
 	/// Registers any services this contributor's <see cref="SeedAsync"/> needs beyond its own
 	/// constructor-injected <c>DbContext</c> (e.g. <c>UserManager</c>, an OpenIddict application
-	/// manager). A contributor that needs nothing beyond its own context implements this as a no-op.
+	/// manager). The default implementation is a no-op; a contributor needs to override this only
+	/// if it requires additional registered services.
 	/// </summary>
 	/// <param name="services">The service collection to register into.</param>
-	static abstract void ConfigureServices(IServiceCollection services);
+	static virtual void ConfigureServices(IServiceCollection services) { }
 }
