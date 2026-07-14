@@ -1,12 +1,13 @@
 namespace Norse.Abstractions.Web.Server.Mediator;
 
 /// <summary>
-/// Handles a single <see cref="ICommandRequest{TResponse}"/>. Every gRPC <c>[OperationContract]</c>
-/// method forwards to exactly one of these — no business logic lives in the gRPC service class
-/// (<c>Heimdall/specs/2026-07-13-authn-identity-split-design.md</c> §0/§3).
+/// Handles a single request and returns a response of type <typeparamref name="TResponse"/>. Deliberately
+/// unconstrained — nothing in the platform dispatches through a generic sender yet, so requiring
+/// <typeparamref name="TRequest"/> to implement <see cref="ICommandRequest{TResponse}"/> was dead weight
+/// that only forced WASM-referenced wire types to reference this server-only assembly. Revisit once a real
+/// generic dispatcher exists.
 /// </summary>
 public interface IRequestHandler<in TRequest, TResponse>
-	where TRequest : ICommandRequest<TResponse>
 {
 	/// <summary>
 	/// Handles the given request and returns a response of type <typeparamref name="TResponse"/>.
