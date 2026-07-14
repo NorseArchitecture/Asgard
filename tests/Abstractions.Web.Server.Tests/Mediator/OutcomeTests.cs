@@ -26,7 +26,7 @@ public sealed class OutcomeTests
 	[Fact]
 	void Err_carries_field_keyed_errors_when_provided()
 	{
-		var errors = new Dictionary<string, string[]> { ["Email"] = ["'Email' must not be empty."] };
+		Dictionary<string, string[]> errors = new() { ["Email"] = ["'Email' must not be empty."] };
 
 		var outcome = Outcome.Err(ErrorCategory.Validation, errors);
 
