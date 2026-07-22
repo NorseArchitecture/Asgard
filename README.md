@@ -21,7 +21,7 @@ Worker and Web.Server are mutually invisible — neither references the other.
 
 ## Status
 
-Scaffolded — six source projects and six test projects, wired into `Asgard.slnx`. **`Norse.Abstractions.Migrations` shipped first** — `IMigrationContributor` is live on NuGet, the seed contract behind the platform-wide migrations framework proven end to end across six realms (the full story is on [Bifröst's README](https://github.com/NorseArchitecture/Bifrost#readme)). Egress contracts (`Norse.Abstractions.Backend.Egress`) are next in flight. Design for each subsequent type surface follows the spec-first discipline: brainstorm → spec → plan in [Glitnir](https://github.com/NorseArchitecture/Glitnir)'s `docs/Asgard/`, greenlit by the human, then code.
+Scaffolded — six source projects and six test projects, wired into `Asgard.slnx`. **`Norse.Abstractions.Migrations` shipped first** — `IMigrationContributor` is live on NuGet, the seed contract behind the platform-wide migrations framework proven end to end across six realms (the full story is on [Bifröst's README](https://github.com/NorseArchitecture/Bifrost#readme)). **`Norse.Abstractions.Web.Server` also carries a live `IDeferredSignIn` contract** (Midgard implements it) and the mediator law surface (`IRequestHandler`, `ICommandRequest`, `Outcome`, `Problem`). Egress contracts (`Norse.Abstractions.Backend.Egress`) are next in flight. Design for each subsequent type surface follows the spec-first discipline: brainstorm → spec → plan in [Glitnir](https://github.com/NorseArchitecture/Glitnir)'s `docs/Asgard/`, greenlit by the human, then code.
 
 ## The cosmos
 

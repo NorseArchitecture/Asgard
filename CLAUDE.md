@@ -2,25 +2,19 @@
 
 ## 0. Wrong Root — Halt
 
-If you are reading this because **Asgard itself is the Claude Code session root** — someone ran `claude` from inside this directory instead of `../Bifrost` — stop here. Do not read further, do not propose changes, do not run anything.
+Session root must be **Bifröst**, not this repo directly — org-wide settings (`superpowers`, permission rules) only apply from the actual root, and Claude Code never merges a submodule's own `.claude/settings.json` into a parent-launched session. If `claude` was run from inside **Asgard**, stop: don't read further, don't propose changes, don't run anything — tell the user to `cd ../Bifrost` and start there. (This repo's `.claude/settings.json` carries a `SessionStart` hook meant to block this before you ever see this file; if you're reading this anyway, the hook was bypassed, disabled, or failed — halt regardless.)
 
-Tell the user: every Norse Architecture session starts from **Bifrost**. Org-wide settings (the `superpowers` plugin, permission rules) only apply when Bifrost is the actual session root — Claude Code never merges a submodule's own `.claude/settings.json` into a parent-launched session. Exit, `cd ../Bifrost`, and run `claude` there instead.
-
-This repo's own `.claude/settings.json` carries a `SessionStart` hook that should already have blocked this session before this file was ever read. If you're reading this anyway, hooks were bypassed, disabled, or failed — halt regardless; this rule does not depend on the hook to hold.
-
----
-
-> **Do not commit, push, or rewrite git history.** Stage edits (`git add`), show the diff, and stop — the human reviews and commits.
-
-> **Use US English spelling** in code, identifiers, comments, docs, and commit/PR copy.
+> **Do not commit, push, or rewrite git history** — stage (`git add`), show the diff, stop; the human reviews and commits. This applies even when a skill's flow includes a commit step. **US English spelling** everywhere — code, comments, docs, commits.
 
 ## 1. What This Repository Is
 
 Asgard is **declared law** — `Norse.Abstractions`: contracts and the rules every realm must honor. No implementations live here, by design. Six assemblies, split by dependency wall and consumer context — see `../Glitnir/docs/Asgard/specs/2026-06-25-asgard-project-structure-design.md` for the full assembly set, dependency graph, and rationale.
 
-The dependency graph is peer-flat except for one assembly: `Norse.Abstractions.Backend` depends on `Norse.Abstractions.Contracts` and `Norse.Primitives` (Svartalfheim — forged below the domain, per the platform convention). The five remaining assemblies carry no upstream dependencies. "Asgard rides on nothing" was the claim before specs converged; the settled design shows `Norse.Abstractions.Backend` is the exception.
+The dependency graph is peer-flat except for one assembly: `Norse.Abstractions.Backend` depends on `Norse.Abstractions.Contracts` and `Norse.Primitives` (Svartálfheim — forged below the domain, per the platform convention). The five remaining assemblies carry no upstream dependencies. "Asgard rides on nothing" was the claim before specs converged; the settled design shows `Norse.Abstractions.Backend` is the exception.
 
 This repo is scaffolded — six source projects and six test projects wired into `Asgard.slnx`. **`Norse.Abstractions.Migrations` is live** — the first of the six assemblies to clear its ship gate: merged, tagged, and published to NuGet as Task 1 of the cross-realm migrations framework rollout (`../Glitnir/docs/Platform/plans/2026-06-28-migrations-framework-identity-schema.md`). `IMigrationContributor` is deliberately the thinnest contract in the platform — no `Order`, no `DependsOn` — because sequencing between migration contributors would mean coupling between bounded contexts, which platform law forbids outright.
+
+**`Norse.Abstractions.Web.Server` also carries a second live contract, `IDeferredSignIn`** (`Abstractions.Web.Server/DeferredSignIn`) — declared here so Midgard's `Infrastructure.Web.Server` can implement it without Himinbjörg's identity layer taking a direct dependency on Midgard for what is fundamentally a hosting concern (`../Glitnir/docs/Heimdall/plans/2026-07-14-deferred-signin-fix.md`). The same assembly carries the mediator law surface (`IRequestHandler`, `ICommandRequest`, `Outcome`, `Problem`, `ErrorCategory`, `BoolResponse`).
 
 The next implementation in flight is the egress contracts slice (plan: `../Glitnir/docs/Asgard/plans/2026-06-19-asgard-egress-contracts.md`, Tasks 2–6 with the amendment applied — egress types land in `Norse.Abstractions.Backend.Egress`). Every subsequent plan for this realm follows the same discipline: brainstorm → spec → plan in `../Glitnir/docs/Asgard/`, greenlit by the human, then code. Each plan's REQUIRED SUB-SKILL line names `superpowers:subagent-driven-development` as the default (not a recommendation among equals — `executing-plans` is the narrow fallback for separate-session review checkpoints) paired with `superpowers:test-driven-development` — implementation here is subagent-orchestrated and test-driven, never one without the other (`../Glitnir/CLAUDE.md` §2.8).
 
