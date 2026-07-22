@@ -3,6 +3,6 @@
 		<Description>Norse component abstractions: Razor component base types shared across Blazor WASM, Blazor Server, and MAUI consumers. No ASP.NET Core, EF Core, or server-side infrastructure references — this assembly must compile into a client bundle.</Description>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="*-*" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.*-*" />
 	</ItemGroup>
 </Project>
