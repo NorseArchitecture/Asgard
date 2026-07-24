@@ -75,10 +75,31 @@ public sealed class OutcomeTests
 		failure.TryGetValue(out Success<BoolResponse> _).ShouldBeFalse();
 	}
 
+	// The struct-era "default(Outcome<T>) throws SwitchExpressionException on first consumption"
+	// test no longer applies — Outcome<T> is a class now (spec §9 amendment), so
+	// default(Outcome<BoolResponse>) is simply null, and "null is never a legitimate third state"
+	// is enforced by the nullable reference type system itself (a compile-time warning/error on
+	// any dereference), not a runtime SwitchExpressionException. Every real construction path
+	// (Ok/Err/the implicit lift) always returns a non-null instance — verified below.
+
 	[Fact]
-	void OutcomeOfT_Default_ThrowsOnMatch_MalformedByConstruction()
+	void OutcomeOfT_Ok_NeverReturnsNull()
 	{
-		var defaulted = default(Outcome<BoolResponse>);
-		Should.Throw<SwitchExpressionException>(() => defaulted.Match(value => value.Value, _ => false));
+		var outcome = Outcome<BoolResponse>.Ok(new BoolResponse { Value = true });
+		outcome.ShouldNotBeNull();
+	}
+
+	[Fact]
+	void OutcomeOfT_Err_NeverReturnsNull()
+	{
+		var outcome = Outcome<BoolResponse>.Err(ErrorCategory.Fault);
+		outcome.ShouldNotBeNull();
+	}
+
+	[Fact]
+	void OutcomeOfT_ImplicitLift_NeverReturnsNull()
+	{
+		Outcome<BoolResponse> outcome = new BoolResponse { Value = true };
+		outcome.ShouldNotBeNull();
 	}
 }
