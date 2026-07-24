@@ -9,10 +9,9 @@ public sealed class DeferredSignInActionTests
 	[Fact]
 	void Constructor_round_trips_all_properties()
 	{
-		var principal = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "buvy")]));
-		var properties = new AuthenticationProperties { IsPersistent = true };
-
-		var action = new DeferredSignInAction("Identity.Application", SignOut: false, principal, properties);
+		ClaimsPrincipal principal = new(new ClaimsIdentity([new Claim(ClaimTypes.Name, "buvy")]));
+		AuthenticationProperties properties = new() { IsPersistent = true };
+		DeferredSignInAction action = new("Identity.Application", SignOut: false, principal, properties);
 
 		action.Scheme.ShouldBe("Identity.Application");
 		action.SignOut.ShouldBeFalse();
