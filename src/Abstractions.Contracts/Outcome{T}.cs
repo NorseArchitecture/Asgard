@@ -90,4 +90,24 @@ public readonly record struct Outcome<T> : IUnion where T : notnull
 			Failed(var problem) => failure(problem),
 		};
 	}
+
+	/// <summary>
+	/// Lifts a success payload into the union. Standard DU ergonomics (the equivalent of Rust's
+	/// <c>From</c>/<c>into</c>) — a handler may <c>return response;</c> directly instead of
+	/// <c>return Outcome&lt;T&gt;.Ok(response);</c>. Union API on its own merits, not wire
+	/// knowledge — this type still carries no serialization awareness.
+	/// </summary>
+	[SuppressMessage("Design", "CA2225:Operator overloads have named alternates", Justification = "Ok(T) is the named alternate — this operator exists purely as ergonomic sugar over it, a second method with a different name would be pure duplication.")]
+	public static implicit operator Outcome<T>(T value) => Ok(value);
+
+	/// <summary>
+	/// Unwraps the success payload. Throws for a failed outcome — a caller that cannot prove
+	/// success ahead of time must pattern-match instead of converting.
+	/// </summary>
+	/// <exception cref="InvalidOperationException">This outcome is the <see cref="Failed"/> case.</exception>
+	[SuppressMessage("Design", "CA2225:Operator overloads have named alternates", Justification = "Match(...) is the named alternate — this operator exists purely as ergonomic sugar over it, a second method with a different name would be pure duplication.")]
+	public static explicit operator T(Outcome<T> outcome) => outcome.Match(
+		static ok => ok,
+		static problem => throw new InvalidOperationException(
+			$"Cannot convert a failed Outcome<{typeof(T).Name}> to its success payload (category: {problem.Category})."));
 }
