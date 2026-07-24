@@ -7,7 +7,7 @@ public sealed class BoolResponseTests
 	[Fact]
 	void Value_round_trips()
 	{
-		var response = new BoolResponse { Value = true };
+		BoolResponse response = new() { Value = true };
 
 		response.Value.ShouldBeTrue();
 	}

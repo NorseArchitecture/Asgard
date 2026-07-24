@@ -22,4 +22,12 @@ public interface IDeferredSignIn
 }
 
 /// <summary>What to do to complete a deferred sign-in/out. <see cref="Principal"/> is null for sign-out.</summary>
-public sealed record DeferredSignInAction(string Scheme, bool SignOut, ClaimsPrincipal? Principal, AuthenticationProperties? Properties);
+/// <param name="Scheme">The authentication scheme to complete the sign-in or sign-out against.</param>
+/// <param name="SignOut">True when this action completes a sign-out; false when it completes a sign-in.</param>
+/// <param name="Principal">The principal to sign in. Null for sign-out.</param>
+/// <param name="Properties">The authentication properties to apply. Null for sign-out.</param>
+public sealed record DeferredSignInAction(
+	string Scheme,
+	bool SignOut,
+	ClaimsPrincipal? Principal,
+	AuthenticationProperties? Properties);

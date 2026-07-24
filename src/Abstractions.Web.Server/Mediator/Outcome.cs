@@ -58,7 +58,8 @@ public sealed record Outcome<T>
 	/// </summary>
 	[SuppressMessage("Design", "CA1000:Do not declare static members on generic types",
 		Justification = "Outcome<T>.Ok/Err are the type's only construction path by design — an instance-side factory would need an already-constructed Outcome<T> to call it from.")]
-	public static Outcome<T> Ok(T value) => new() { IsSuccess = true, Value = value };
+	public static Outcome<T> Ok(T value) =>
+		new() { IsSuccess = true, Value = value };
 
 	/// <summary>
 	/// Creates a failed outcome with the given error category and optional field errors.

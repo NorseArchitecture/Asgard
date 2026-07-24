@@ -6,7 +6,7 @@ namespace Norse.Abstractions.Web.Server.Mediator;
 /// AuthN-specific extension over the platform's base Validation/NotFound/Conflict trio — the first real
 /// consumer of this type, per <c>Heimdall/specs/2026-07-13-authn-identity-split-design.md</c> §3.1.
 /// </summary>
-public enum ErrorCategory
+public enum ErrorCategory : byte
 {
 	/// <summary>Validation failure.</summary>
 	Validation = 1,
@@ -19,5 +19,5 @@ public enum ErrorCategory
 	/// <summary>Invalid credentials provided.</summary>
 	InvalidCredentials = 5,
 	/// <summary>Operation not allowed.</summary>
-	NotAllowed = 6,
+	NotAllowed = 6
 }
