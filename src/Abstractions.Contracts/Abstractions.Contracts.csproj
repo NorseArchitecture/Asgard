@@ -2,4 +2,9 @@
 	<PropertyGroup>
 		<Description>Norse declared law: the NorsePrincipal identity surface, Population value type, published domain event interfaces, and the IAccountApi cross-realm read contract. The single assembly other product contexts reference from Norse.Abstractions.</Description>
 	</PropertyGroup>
+	<ItemGroup>
+		<NorseRef Include="Primitives">
+			<Repo>Svartalfheim</Repo>
+		</NorseRef>
+	</ItemGroup>
 </Project>
