@@ -211,4 +211,17 @@ public sealed class GatewayGeneratorTests
 		diagnostics.ShouldContain(d => d.Id == "NORSE004" && d.Severity == DiagnosticSeverity.Error);
 		sources.ShouldBeEmpty();
 	}
+
+	[Fact]
+	void WireHostMode_EmitsWireGateway_DecodingRpcExceptionViaMidgardExtension()
+	{
+		var (diagnostics, sources) = GeneratorTestHarness.Run(ServiceInterfaceSource, "WireHost");
+
+		diagnostics.ShouldBeEmpty();
+		var wireSource = sources.ShouldHaveSingleItem();
+		wireSource.ShouldContain("sealed class WidgetWireGateway");
+		wireSource.ShouldContain("IWidgetGateway");
+		wireSource.ShouldContain("catch (global::Grpc.Core.RpcException ex)");
+		wireSource.ShouldContain("global::Norse.Infrastructure.Web.Client.Grpc.RpcExceptionExtensions.DecodeProblem(ex)");
+	}
 }

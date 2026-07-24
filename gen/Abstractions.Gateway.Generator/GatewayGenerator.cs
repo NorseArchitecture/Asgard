@@ -50,7 +50,9 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 
 				if (mode == "Contract")
 					productionContext.AddSource($"{model.ContextName}Gateway.g.cs", ContractEmitter.Emit(model));
-				// WireHost and InProcessHost modes added in Task 8 and Task 9.
+				else if (mode == "WireHost")
+					productionContext.AddSource($"{model.ContextName}WireGateway.g.cs", WireHostEmitter.Emit(model));
+				// InProcessHost mode added in Task 9.
 			}
 		});
 	}
