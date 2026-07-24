@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Norse.Abstractions.Gateway.Generator;
+namespace Norse.Abstractions.Contracts.Generator;
 
 [Generator(LanguageNames.CSharp)]
 public sealed class GatewayGenerator : IIncrementalGenerator

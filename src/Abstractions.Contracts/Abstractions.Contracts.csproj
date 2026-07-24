@@ -7,16 +7,16 @@
 			<Repo>Svartalfheim</Repo>
 		</NorseRef>
 		<ProjectReference
-			Include="../../gen/Abstractions.Gateway.Generator/Abstractions.Gateway.Generator.csproj"
+			Include="../../gen/Abstractions.Contracts.Generator/Abstractions.Contracts.Generator.csproj"
 			OutputItemType="Analyzer"
 			ReferenceOutputAssembly="false" />
 	</ItemGroup>
 	<Target Name="IncludeGeneratorInPackage" BeforeTargets="_GetPackageFiles">
-		<MSBuild Projects="../../gen/Abstractions.Gateway.Generator/Abstractions.Gateway.Generator.csproj"
+		<MSBuild Projects="../../gen/Abstractions.Contracts.Generator/Abstractions.Contracts.Generator.csproj"
 			Targets="Build"
 			Properties="Configuration=$(Configuration)" />
 		<ItemGroup>
-			<None Include="../../gen/Abstractions.Gateway.Generator/bin/$(Configuration)/netstandard2.0/Norse.Abstractions.Gateway.Generator.dll"
+			<None Include="../../gen/Abstractions.Contracts.Generator/bin/$(Configuration)/netstandard2.0/Norse.Abstractions.Contracts.Generator.dll"
 				Pack="true"
 				PackagePath="analyzers/dotnet/cs/"
 				Visible="false" />

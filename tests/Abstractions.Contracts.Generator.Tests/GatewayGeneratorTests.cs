@@ -3,11 +3,11 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Norse.Abstractions.Gateway.Generator;
+using Norse.Abstractions.Contracts.Generator;
 using Shouldly;
 #pragma warning restore IDE0005
 
-namespace Norse.Abstractions.Gateway.Generator.Tests;
+namespace Norse.Abstractions.Contracts.Generator.Tests;
 
 static class GeneratorTestHarness
 {

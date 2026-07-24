@@ -1,7 +1,7 @@
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace Norse.Abstractions.Gateway.Generator.Tests;
+namespace Norse.Abstractions.Contracts.Generator.Tests;
 
 static class ReferenceAssemblies
 {

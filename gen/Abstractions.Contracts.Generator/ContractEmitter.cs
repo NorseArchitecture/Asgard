@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Norse.Abstractions.Gateway.Generator;
+namespace Norse.Abstractions.Contracts.Generator;
 
 static class ContractEmitter
 {

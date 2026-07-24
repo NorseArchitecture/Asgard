@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Norse.Abstractions.Gateway.Generator.Tests;
+namespace Norse.Abstractions.Contracts.Generator.Tests;
 
 sealed class TestAnalyzerConfigOptionsProvider(string emissionMode) : AnalyzerConfigOptionsProvider
 {
