@@ -252,7 +252,8 @@ public sealed class GatewayGeneratorTests
 		var (diagnostics, sources) = GeneratorTestHarness.Run(ServiceInterfaceSource, "WireHost");
 
 		diagnostics.ShouldBeEmpty();
-		var wireSource = sources.ShouldHaveSingleItem();
+		sources.Length.ShouldBe(2);
+		var wireSource = sources.Single(s => s.Contains("WidgetWireGateway", StringComparison.Ordinal));
 		wireSource.ShouldContain("sealed class WidgetWireGateway");
 		wireSource.ShouldContain("IWidgetGateway");
 		wireSource.ShouldContain("catch (global::Grpc.Core.RpcException ex)");
@@ -263,12 +264,25 @@ public sealed class GatewayGeneratorTests
 	}
 
 	[Fact]
+	void WireHostMode_AlsoEmitsOutcomeSurrogatesRegistration_OneLinePerResponseType()
+	{
+		var (diagnostics, sources) = GeneratorTestHarness.Run(ServiceInterfaceSource, "WireHost");
+
+		diagnostics.ShouldBeEmpty();
+		var surrogateSource = sources.Single(s => s.Contains("WidgetOutcomeSurrogates", StringComparison.Ordinal));
+		surrogateSource.ShouldContain("static class WidgetOutcomeSurrogates");
+		surrogateSource.ShouldContain("public static RuntimeTypeModel RegisterOutcomeSurrogates(this RuntimeTypeModel model)");
+		surrogateSource.ShouldContain("model.Add(typeof(Outcome<WidgetResponse>), applyDefaultBehaviour: false).SetSurrogate(typeof(WidgetResponse));");
+	}
+
+	[Fact]
 	void InProcessHostMode_EmitsChainInCorrectOrder_TelemetryOutermost()
 	{
 		var (diagnostics, sources) = GeneratorTestHarness.Run(ServiceInterfaceSource, "InProcessHost");
 
 		diagnostics.ShouldBeEmpty();
-		var source = sources.ShouldHaveSingleItem();
+		sources.Length.ShouldBe(2);
+		var source = sources.Single(s => s.Contains("WidgetInProcessGateway", StringComparison.Ordinal));
 		source.ShouldContain("sealed class WidgetInProcessGateway : IWidgetGateway");
 		source.ShouldContain("IValidator<WidgetRequest>");
 		source.ShouldContain("AuthenticationStateProvider");
@@ -312,12 +326,27 @@ public sealed class GatewayGeneratorTests
 		var (diagnostics, sources) = GeneratorTestHarness.Run(Source, "InProcessHost");
 
 		diagnostics.ShouldBeEmpty();
-		var generated = sources.ShouldHaveSingleItem();
+		sources.Length.ShouldBe(2);
+		var generated = sources.Single(s => s.Contains("WidgetInProcessGateway", StringComparison.Ordinal));
 		generated.ShouldContain("ValueTask<Outcome<Unit>> DeleteWidget(");
 		generated.ShouldContain("ValidationBehavior<WidgetRequest, Unit>");
 		// No second behavior/chain family — same generic types the payload-bearing method uses.
 		generated.ShouldNotContain("IBehavior<WidgetRequest>");
 		// No AwaitThenUnit ceremony — the service already returns Outcome<Unit> directly.
 		generated.ShouldNotContain("AwaitThenUnit");
+	}
+
+	[Fact]
+	void ContractMode_NeverEmitsProtobufNetReferences_SurrogateRegistrationIsHostOnly()
+	{
+		var (diagnostics, sources) = GeneratorTestHarness.Run(ServiceInterfaceSource, "Contract");
+
+		diagnostics.ShouldBeEmpty();
+		// Contract mode ships into service realms, which must never carry a protobuf-net reference
+		// (architect's ruling, 2026-07-24: gRPC/protobuf never sifts into a service realm) — the
+		// surrogate registration is WireHost/InProcessHost-only, emitted into Yggdrasil's hosts.
+		sources.ShouldAllBe(s => !s.Contains("ProtoBuf", StringComparison.Ordinal));
+		sources.ShouldAllBe(s => !s.Contains("RuntimeTypeModel", StringComparison.Ordinal));
+		sources.ShouldAllBe(s => !s.Contains("SetSurrogate", StringComparison.Ordinal));
 	}
 }
