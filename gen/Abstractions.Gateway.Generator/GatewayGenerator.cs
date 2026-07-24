@@ -22,6 +22,11 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 		"NORSE003", "[GenerateGateway] interface name is not I{Context}Service",
 		"Interface '{0}' is decorated [GenerateGateway] but its name doesn't match I{{Context}}Service. The generator derives the gateway's name from that suffix and refuses to guess for any other shape (e.g. I{{Context}}Api). Rename the interface or extend this generator's naming rule deliberately.",
 		"Norse.Gateway", DiagnosticSeverity.Error, isEnabledByDefault: true);
+
+	static readonly DiagnosticDescriptor _missingRequestParameter = new(
+		"NORSE004", "Service method has no request parameter",
+		"Method '{0}' on a [GenerateGateway] interface takes no parameters — every gateway-generated method requires exactly one request parameter (spec §2.2); this is a malformed service interface, not a shape the generator can emit code for",
+		"Norse.Gateway", DiagnosticSeverity.Error, isEnabledByDefault: true);
 #pragma warning restore RS2008
 
 	public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -85,6 +90,11 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 					if (authorize is null)
 					{
 						diagnostics.Add(Diagnostic.Create(_missingAuthorize, member.Locations.FirstOrDefault() ?? Location.None, member.Name));
+						continue;
+					}
+					if (member.Parameters.Length == 0)
+					{
+						diagnostics.Add(Diagnostic.Create(_missingRequestParameter, member.Locations.FirstOrDefault() ?? Location.None, member.Name));
 						continue;
 					}
 					var policyName = authorize.NamedArguments.FirstOrDefault(kv => kv.Key == "Policy").Value.Value as string ?? "";

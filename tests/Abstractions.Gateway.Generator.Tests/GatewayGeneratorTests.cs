@@ -183,4 +183,32 @@ public sealed class GatewayGeneratorTests
 		diagnostics.ShouldContain(d => d.Id == "NORSE003" && d.Severity == DiagnosticSeverity.Error);
 		sources.ShouldBeEmpty();
 	}
+
+	[Fact]
+	void MethodWithNoParameters_ReportsNorse004Error_DoesNotCrash()
+	{
+		const string Source = """
+			using System.ServiceModel;
+			using Microsoft.AspNetCore.Authorization;
+			using Norse.Abstractions.Contracts;
+
+			namespace TestRealm.Services;
+
+			[GenerateGateway]
+			[ServiceContract]
+			public interface IWidgetService
+			{
+				[Authorize(Policy = "Widget.Read")]
+				[OperationContract]
+				Task<WidgetResponse> GetWidget();
+			}
+
+			public sealed record WidgetResponse;
+			""";
+
+		var (diagnostics, sources) = GeneratorTestHarness.Run(Source, "Contract");
+
+		diagnostics.ShouldContain(d => d.Id == "NORSE004" && d.Severity == DiagnosticSeverity.Error);
+		sources.ShouldBeEmpty();
+	}
 }
