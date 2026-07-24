@@ -1,4 +1,4 @@
-namespace Norse.Abstractions.Web.Server.Mediator;
+namespace Norse.Abstractions.Contracts;
 
 /// <summary>
 /// The mediator's trivial "did it work" success payload — used by handlers whose only meaningful success
