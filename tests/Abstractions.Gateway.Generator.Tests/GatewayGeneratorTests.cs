@@ -224,4 +224,60 @@ public sealed class GatewayGeneratorTests
 		wireSource.ShouldContain("catch (global::Grpc.Core.RpcException ex)");
 		wireSource.ShouldContain("global::Norse.Infrastructure.Web.Client.Grpc.RpcExceptionExtensions.DecodeProblem(ex)");
 	}
+
+	[Fact]
+	void InProcessHostMode_EmitsChainInCorrectOrder_TelemetryOutermost()
+	{
+		var (diagnostics, sources) = GeneratorTestHarness.Run(ServiceInterfaceSource, "InProcessHost");
+
+		diagnostics.ShouldBeEmpty();
+		var source = sources.ShouldHaveSingleItem();
+		source.ShouldContain("sealed class WidgetInProcessGateway : IWidgetGateway");
+		source.ShouldContain("IValidator<WidgetRequest>");
+		source.ShouldContain("AuthenticationStateProvider");
+		source.ShouldNotContain("IHttpContextAccessor");
+		source.ShouldContain("\"Widget.Read\"");
+
+		var telemetryIndex = source.IndexOf("TelemetryBehavior", StringComparison.Ordinal);
+		var exceptionIndex = source.IndexOf("ExceptionTranslationBehavior", StringComparison.Ordinal);
+		var authorizationIndex = source.IndexOf("AuthorizationBehavior", StringComparison.Ordinal);
+		var validationIndex = source.IndexOf("ValidationBehavior", StringComparison.Ordinal);
+
+		telemetryIndex.ShouldBeLessThan(exceptionIndex);
+		exceptionIndex.ShouldBeLessThan(authorizationIndex);
+		authorizationIndex.ShouldBeLessThan(validationIndex);
+	}
+
+	[Fact]
+	void InProcessHostMode_VoidSuccessMethod_UsesUnitViaSameChainShape_NotASecondFamily()
+	{
+		const string Source = """
+			using System.ServiceModel;
+			using Microsoft.AspNetCore.Authorization;
+			using Norse.Abstractions.Contracts;
+
+			namespace TestRealm.Services;
+
+			[GenerateGateway]
+			[ServiceContract]
+			public interface IWidgetService
+			{
+				[Authorize(Policy = "Widget.Delete")]
+				[OperationContract]
+				Task DeleteWidget(WidgetRequest request, CancellationToken cancellationToken = default);
+			}
+
+			public sealed record WidgetRequest;
+			""";
+
+		var (diagnostics, sources) = GeneratorTestHarness.Run(Source, "InProcessHost");
+
+		diagnostics.ShouldBeEmpty();
+		var generated = sources.ShouldHaveSingleItem();
+		generated.ShouldContain("ValueTask<Outcome<Unit>> DeleteWidget(");
+		generated.ShouldContain("ValidationBehavior<WidgetRequest, Unit>");
+		generated.ShouldContain("AwaitThenUnit");
+		// No second behavior/chain family — same generic types the payload-bearing method uses.
+		generated.ShouldNotContain("IBehavior<WidgetRequest>");
+	}
 }
