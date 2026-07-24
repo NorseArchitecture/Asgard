@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net11.0</TargetFramework>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Authorization" Version="*" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="*" PrivateAssets="all" />
+		<PackageReference Include="protobuf-net.Grpc" Version="*" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="../../src/Abstractions.Contracts/Abstractions.Contracts.csproj" />
+		<ProjectReference Include="../../gen/Abstractions.Gateway.Generator/Abstractions.Gateway.Generator.csproj" />
+	</ItemGroup>
+</Project>
