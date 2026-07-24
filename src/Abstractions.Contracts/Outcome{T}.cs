@@ -1,5 +1,4 @@
 #pragma warning disable IDE0005 // Using directive is unnecessary
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Norse.Primitives;
@@ -35,8 +34,10 @@ public readonly record struct Outcome<T> : IUnion where T : notnull
 	}
 
 	/// <summary>Creates a failed outcome. Also reachable as an implicit union conversion.</summary>
+	/// <exception cref="ArgumentNullException"><paramref name="value"/> carries a null <see cref="Problem"/> — a smuggled <c>default(Failed)</c> past the case type's own guard.</exception>
 	public Outcome(Failed value)
 	{
+		ArgumentNullException.ThrowIfNull(value.Problem);
 		_failed = value;
 		_state = State.Failure;
 	}
@@ -77,10 +78,16 @@ public readonly record struct Outcome<T> : IUnion where T : notnull
 		new(new Failed(new Problem { Category = category, Errors = errors ?? new Dictionary<string, string[]>(), CorrelationId = correlationId }));
 
 	/// <summary>Consumes the outcome by handling both cases.</summary>
-	public TResult Match<TResult>(Func<T, TResult> success, Func<Problem, TResult> failure) =>
-		this switch
+	/// <exception cref="ArgumentNullException"><paramref name="success"/> or <paramref name="failure"/> is null.</exception>
+	/// <exception cref="SwitchExpressionException">This value was defaulted rather than constructed.</exception>
+	public TResult Match<TResult>(Func<T, TResult> success, Func<Problem, TResult> failure)
+	{
+		ArgumentNullException.ThrowIfNull(success);
+		ArgumentNullException.ThrowIfNull(failure);
+		return this switch
 		{
 			Success<T>(var value) => success(value),
 			Failed(var problem) => failure(problem),
 		};
+	}
 }

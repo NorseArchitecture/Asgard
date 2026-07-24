@@ -1,4 +1,5 @@
 #pragma warning disable IDE0005 // Using directive is unnecessary
+using System.Runtime.CompilerServices;
 using Norse.Abstractions.Contracts;
 using Norse.Primitives;
 #pragma warning restore IDE0005
@@ -62,5 +63,22 @@ public sealed class OutcomeTests
 		((byte)ErrorCategory.Unauthorized).ShouldBe((byte)7);
 		((byte)ErrorCategory.Forbidden).ShouldBe((byte)8);
 		((byte)ErrorCategory.Fault).ShouldBe((byte)9);
+	}
+
+	[Fact]
+	void OutcomeOfT_TryGetValue_ReturnsFalse_ForTheOtherCase()
+	{
+		var success = Outcome<BoolResponse>.Ok(new BoolResponse { Value = true });
+		success.TryGetValue(out Failed _).ShouldBeFalse();
+
+		var failure = Outcome<BoolResponse>.Err(ErrorCategory.NotFound);
+		failure.TryGetValue(out Success<BoolResponse> _).ShouldBeFalse();
+	}
+
+	[Fact]
+	void OutcomeOfT_Default_ThrowsOnMatch_MalformedByConstruction()
+	{
+		var defaulted = default(Outcome<BoolResponse>);
+		Should.Throw<SwitchExpressionException>(() => defaulted.Match(value => value.Value, _ => false));
 	}
 }
