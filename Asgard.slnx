@@ -17,6 +17,10 @@
 		<Project Path="src/Abstractions.Web.Server/Abstractions.Web.Server.csproj" />
 		<Project Path="src/Abstractions.Migrations/Abstractions.Migrations.csproj" />
 	</Folder>
+	<Folder Name="/gen/">
+		<File Path="gen/Directory.Build.props" />
+		<Project Path="gen/Abstractions.Contracts.Generator/Abstractions.Contracts.Generator.csproj" />
+	</Folder>
 	<Folder Name="/tests/">
 		<File Path="tests/Directory.Build.props" />
 		<File Path="tests/Directory.Build.targets" />
@@ -26,5 +30,6 @@
 		<Project Path="tests/Abstractions.Worker.Tests/Abstractions.Worker.Tests.csproj" />
 		<Project Path="tests/Abstractions.Web.Server.Tests/Abstractions.Web.Server.Tests.csproj" />
 		<Project Path="tests/Abstractions.Migrations.Tests/Abstractions.Migrations.Tests.csproj" />
+		<Project Path="tests/Abstractions.Contracts.Generator.Tests/Abstractions.Contracts.Generator.Tests.csproj" />
 	</Folder>
 </Solution>
