@@ -36,6 +36,9 @@ static class GeneratorTestHarness
 
 public sealed class GatewayGeneratorTests
 {
+	// Every Asgard-contracted service method returns Outcome<T> directly (spec §9, 2026-07-24
+	// amendment to decided law item 3) — the envelope is the wire method signature, not a bare
+	// payload the generator wraps.
 	const string ServiceInterfaceSource = """
 		using System.ServiceModel;
 		using Microsoft.AspNetCore.Authorization;
@@ -49,7 +52,7 @@ public sealed class GatewayGeneratorTests
 		{
 			[Authorize(Policy = "Widget.Read")]
 			[OperationContract]
-			Task<WidgetResponse> GetWidget(WidgetRequest request, CancellationToken cancellationToken = default);
+			Task<Outcome<WidgetResponse>> GetWidget(WidgetRequest request, CancellationToken cancellationToken = default);
 		}
 
 		public sealed record WidgetRequest;
@@ -83,7 +86,7 @@ public sealed class GatewayGeneratorTests
 			{
 				[Authorize(Policy = "Widget.Delete")]
 				[OperationContract]
-				Task DeleteWidget(WidgetRequest request, CancellationToken cancellationToken = default);
+				Task<Outcome<Unit>> DeleteWidget(WidgetRequest request, CancellationToken cancellationToken = default);
 			}
 
 			public sealed record WidgetRequest;
@@ -94,8 +97,8 @@ public sealed class GatewayGeneratorTests
 		diagnostics.ShouldBeEmpty();
 		var gatewaySource = sources.ShouldHaveSingleItem();
 		// Explicit Outcome<Unit> — never bare "ValueTask<Outcome>", which would only compile in a
-		// project that happens to carry the GlobalUsings.Outcome.cs alias. Generated code must never
-		// depend on that (2026-07-24 review) — this is exactly the gap that broke Task 10's build.
+		// project that happens to carry a hand-rolled alias file. Generated code must never depend
+		// on that (2026-07-24 review) — this is exactly the gap that broke Task 10's build.
 		gatewaySource.ShouldContain("ValueTask<Outcome<Unit>> DeleteWidget(WidgetRequest request, CancellationToken cancellationToken = default)");
 		gatewaySource.ShouldNotContain("ValueTask<Outcome> ");
 	}
@@ -114,7 +117,7 @@ public sealed class GatewayGeneratorTests
 			public interface IWidgetService
 			{
 				[OperationContract]
-				Task<WidgetResponse> GetWidget(WidgetRequest request, CancellationToken cancellationToken = default);
+				Task<Outcome<WidgetResponse>> GetWidget(WidgetRequest request, CancellationToken cancellationToken = default);
 			}
 
 			public sealed record WidgetRequest;
@@ -171,7 +174,7 @@ public sealed class GatewayGeneratorTests
 			{
 				[Authorize(Policy = "Widget.Read")]
 				[OperationContract]
-				Task<WidgetResponse> GetWidget(WidgetRequest request, CancellationToken cancellationToken = default);
+				Task<Outcome<WidgetResponse>> GetWidget(WidgetRequest request, CancellationToken cancellationToken = default);
 			}
 
 			public sealed record WidgetRequest;
@@ -200,7 +203,7 @@ public sealed class GatewayGeneratorTests
 			{
 				[Authorize(Policy = "Widget.Read")]
 				[OperationContract]
-				Task<WidgetResponse> GetWidget();
+				Task<Outcome<WidgetResponse>> GetWidget();
 			}
 
 			public sealed record WidgetResponse;
@@ -209,6 +212,37 @@ public sealed class GatewayGeneratorTests
 		var (diagnostics, sources) = GeneratorTestHarness.Run(Source, "Contract");
 
 		diagnostics.ShouldContain(d => d.Id == "NORSE004" && d.Severity == DiagnosticSeverity.Error);
+		sources.ShouldBeEmpty();
+	}
+
+	[Fact]
+	void MethodReturningBarePayload_ReportsNorse005Error_DoesNotDoubleWrap()
+	{
+		const string Source = """
+			using System.ServiceModel;
+			using Microsoft.AspNetCore.Authorization;
+			using Norse.Abstractions.Contracts;
+
+			namespace TestRealm.Services;
+
+			[GenerateGateway]
+			[ServiceContract]
+			public interface IWidgetService
+			{
+				[Authorize(Policy = "Widget.Read")]
+				[OperationContract]
+				Task<WidgetResponse> GetWidget(WidgetRequest request, CancellationToken cancellationToken = default);
+			}
+
+			public sealed record WidgetRequest;
+			public sealed record WidgetResponse;
+			""";
+
+		var (diagnostics, sources) = GeneratorTestHarness.Run(Source, "Contract");
+
+		// The pre-amendment shape (bare Task<T>, no Outcome<T>) used to be the norm this generator
+		// wrapped — it is now malformed input, not a shape to silently double-wrap into Outcome<Outcome<T>>.
+		diagnostics.ShouldContain(d => d.Id == "NORSE005" && d.Severity == DiagnosticSeverity.Error);
 		sources.ShouldBeEmpty();
 	}
 
@@ -223,6 +257,9 @@ public sealed class GatewayGeneratorTests
 		wireSource.ShouldContain("IWidgetGateway");
 		wireSource.ShouldContain("catch (global::Grpc.Core.RpcException ex)");
 		wireSource.ShouldContain("global::Norse.Infrastructure.Web.Client.Grpc.RpcExceptionExtensions.DecodeProblem(ex)");
+		// The server never sends the Failed arm over the wire (it throws before marshalling) — a
+		// successful call already returns a real Outcome<T>, so the success path must not re-wrap it.
+		wireSource.ShouldNotContain(".Ok(");
 	}
 
 	[Fact]
@@ -237,6 +274,8 @@ public sealed class GatewayGeneratorTests
 		source.ShouldContain("AuthenticationStateProvider");
 		source.ShouldNotContain("IHttpContextAccessor");
 		source.ShouldContain("\"Widget.Read\"");
+		// The service already returns Outcome<T> directly — no Ok-wrapping ceremony at the innermost call.
+		source.ShouldNotContain(".Ok(");
 
 		var telemetryIndex = source.IndexOf("TelemetryBehavior", StringComparison.Ordinal);
 		var exceptionIndex = source.IndexOf("ExceptionTranslationBehavior", StringComparison.Ordinal);
@@ -264,7 +303,7 @@ public sealed class GatewayGeneratorTests
 			{
 				[Authorize(Policy = "Widget.Delete")]
 				[OperationContract]
-				Task DeleteWidget(WidgetRequest request, CancellationToken cancellationToken = default);
+				Task<Outcome<Unit>> DeleteWidget(WidgetRequest request, CancellationToken cancellationToken = default);
 			}
 
 			public sealed record WidgetRequest;
@@ -276,8 +315,9 @@ public sealed class GatewayGeneratorTests
 		var generated = sources.ShouldHaveSingleItem();
 		generated.ShouldContain("ValueTask<Outcome<Unit>> DeleteWidget(");
 		generated.ShouldContain("ValidationBehavior<WidgetRequest, Unit>");
-		generated.ShouldContain("AwaitThenUnit");
 		// No second behavior/chain family — same generic types the payload-bearing method uses.
 		generated.ShouldNotContain("IBehavior<WidgetRequest>");
+		// No AwaitThenUnit ceremony — the service already returns Outcome<Unit> directly.
+		generated.ShouldNotContain("AwaitThenUnit");
 	}
 }
