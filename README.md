@@ -10,7 +10,7 @@ Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contra
 
 | Assembly | Upstream Dependencies | Purpose |
 |---|---|---|
-| `Norse.Abstractions.Contracts` | none | `NorsePrincipal`, `Population`, published event interfaces, `IAccountApi` |
+| `Norse.Abstractions.Contracts` | none | `Outcome<T>` (+ `Problem`/`ErrorCategory`/`BoolResponse`/`Unit`), `[GenerateGateway]` |
 | `Norse.Abstractions.Components` | none | Razor component base abstractions (MAUI/WASM-safe — no server-side infrastructure) |
 | `Norse.Abstractions.Backend` | `Norse.Primitives`, `Norse.Abstractions.Contracts` | Shared server-side contracts (egress contracts under `.Egress` namespace) |
 | `Norse.Abstractions.Worker` | `Norse.Abstractions.Backend` (transitive) | `IWorkerHostPlugin`, `ICommandRepository<T>`, `ICachedRepository<T>`, NServiceBus seams |
@@ -21,7 +21,7 @@ Worker and Web.Server are mutually invisible — neither references the other.
 
 ## Status
 
-Scaffolded — six source projects and six test projects, wired into `Asgard.slnx`. **`Norse.Abstractions.Migrations` shipped first** — `IMigrationContributor` is live on NuGet, the seed contract behind the platform-wide migrations framework proven end to end across six realms (the full story is on [Bifröst's README](https://github.com/NorseArchitecture/Bifrost#readme)). **`Norse.Abstractions.Web.Server` also carries a live `IDeferredSignIn` contract** (Midgard implements it) and the mediator law surface (`IRequestHandler`, `ICommandRequest`, `Outcome`, `Problem`). Egress contracts (`Norse.Abstractions.Backend.Egress`) are next in flight. Design for each subsequent type surface follows the spec-first discipline: brainstorm → spec → plan in [Glitnir](https://github.com/NorseArchitecture/Glitnir)'s `docs/Asgard/`, greenlit by the human, then code.
+Scaffolded — six source projects and six test projects, wired into `Asgard.slnx`. **`Norse.Abstractions.Migrations` shipped first** — `IMigrationContributor` is live on NuGet, the seed contract behind the platform-wide migrations framework proven end to end across six realms (the full story is on [Bifröst's README](https://github.com/NorseArchitecture/Bifrost#readme)). **`Norse.Abstractions.Web.Server` also carries a live `IDeferredSignIn` contract** (Midgard implements it) and the mediator law surface (`IRequestHandler`, `ICommandRequest`, `IBehavior`). **`Norse.Abstractions.Contracts` shipped `Outcome<T>`** — the platform's second discriminated union, Asgard's counterpart to Svartálfheim's `Result<T>` — and the `GatewayGenerator` it drives via `[GenerateGateway]`, emitting `Contract`/`InProcessHost`/`WireHost` adapters (PR #36, tag v0.0.10). Egress contracts (`Norse.Abstractions.Backend.Egress`) remain staged, not yet executed. Design for each subsequent type surface follows the spec-first discipline: brainstorm → spec → plan in [Glitnir](https://github.com/NorseArchitecture/Glitnir)'s `docs/Asgard/`, greenlit by the human, then code.
 
 ## The cosmos
 

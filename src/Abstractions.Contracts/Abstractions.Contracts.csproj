@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Description>Norse declared law: the NorsePrincipal identity surface, Population value type, published domain event interfaces, and the IAccountApi cross-realm read contract. The single assembly other product contexts reference from Norse.Abstractions.</Description>
+		<Description>Norse declared law: Outcome&lt;T&gt; (the platform's interior discriminated union — Success&lt;T&gt;/Failed(Problem); doctrine at Glitnir's the-two-unions.md), Problem/ErrorCategory/BoolResponse/Unit, and the GenerateGatewayAttribute that drives Asgard's GatewayGenerator (Contract/InProcessHost/WireHost emission). The single assembly other product contexts reference from Norse.Abstractions.</Description>
 	</PropertyGroup>
 	<ItemGroup>
 		<NorseRef Include="Primitives">

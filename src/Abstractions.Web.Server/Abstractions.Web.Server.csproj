@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 	<PropertyGroup>
-		<Description>Norse web-server abstractions: IWebHostPlugin, the document repository surface (IDocumentRepository&lt;T&gt;), and mediator law (ICommandRequest&lt;T&gt;, validator and authorizer contracts) — the server-side law for the web tier. Mutually invisible with Norse.Abstractions.Worker.</Description>
+		<Description>Norse web-server abstractions: IDeferredSignIn (the hosting-concern contract Midgard's Infrastructure.Web.Server implements against, so Himinbjorg's identity layer never depends on Midgard directly) and the mediator law surface (ICommandRequest&lt;TResponse&gt;, IRequestHandler, IBehavior, BehaviorAttribute) — the server-side law for the web tier. IWebHostPlugin and IDocumentRepository&lt;T&gt; are scaffolded, not yet implemented. Mutually invisible with Norse.Abstractions.Worker.</Description>
 	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="../Abstractions.Backend/Abstractions.Backend.csproj" />
