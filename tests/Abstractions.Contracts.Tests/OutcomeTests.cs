@@ -1,8 +1,4 @@
-#pragma warning disable IDE0005 // Using directive is unnecessary
-using System.Runtime.CompilerServices;
-using Norse.Abstractions.Contracts;
 using Norse.Primitives;
-#pragma warning restore IDE0005
 
 namespace Norse.Abstractions.Contracts.Tests;
 

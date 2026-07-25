@@ -1,11 +1,6 @@
-#pragma warning disable IDE0005
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Diagnostics;
-using Norse.Abstractions.Contracts.Generator;
-using Shouldly;
-#pragma warning restore IDE0005
 
 namespace Norse.Abstractions.Contracts.Generator.Tests;
 
