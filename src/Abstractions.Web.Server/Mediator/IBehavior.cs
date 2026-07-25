@@ -16,10 +16,11 @@ public delegate ValueTask<Outcome<TResponse>> BehaviorDelegate<TResponse>() wher
 /// Asgard's ship gate specifically to avoid forcing every future custom behavior — including every
 /// {Company}.{Context} product realm's own — to implement both shapes forever.
 /// </summary>
-public interface IBehavior<TRequest, TResponse> where TResponse : notnull
+public interface IBehavior<in TRequest, TResponse> where TResponse : notnull
 {
 	/// <summary>Runs this behavior, calling <paramref name="next"/> to continue the chain.</summary>
-	[SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "Behavior chain signature places CancellationToken before the delegate for clarity in the generated code.")]
-	[SuppressMessage("Naming", "CA1716:Identifiers should not conflict with keywords", Justification = "Parameter name 'next' is intentional for clarity in behavior chaining.")]
-	ValueTask<Outcome<TResponse>> Handle(TRequest request, CancellationToken cancellationToken, BehaviorDelegate<TResponse> next);
+	[SuppressMessage("Naming", "CA1716:Identifiers should not conflict with keywords",
+		Justification = "Parameter name 'next' is intentional for clarity in behavior chaining.")]
+	ValueTask<Outcome<TResponse>> Handle(TRequest request, BehaviorDelegate<TResponse> next,
+		CancellationToken cancellationToken = default);
 }

@@ -12,5 +12,5 @@ public interface IRequestHandler<in TRequest, TResponse>
 	/// <summary>
 	/// Handles the given request and returns a response of type <typeparamref name="TResponse"/>.
 	/// </summary>
-	ValueTask<TResponse> Handle(TRequest request, CancellationToken cancellationToken);
+	ValueTask<TResponse> Handle(TRequest request, CancellationToken cancellationToken = default);
 }

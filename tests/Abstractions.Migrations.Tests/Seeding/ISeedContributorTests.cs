@@ -10,7 +10,7 @@ public sealed class ISeedContributorTests
 	{
 		StubSeedContributor stub = new();
 
-		await stub.SeedAsync(CancellationToken.None);
+		await stub.SeedAsync(TestContext.Current.CancellationToken);
 
 		stub.Invoked.ShouldBeTrue();
 	}
