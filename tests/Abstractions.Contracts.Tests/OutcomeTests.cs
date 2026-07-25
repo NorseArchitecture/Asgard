@@ -102,4 +102,27 @@ public sealed class OutcomeTests
 		Outcome<BoolResponse> outcome = new BoolResponse { Value = true };
 		outcome.ShouldNotBeNull();
 	}
+
+	// protobuf-net's SetSurrogate contract (verified against its own SurrogateForObjectUsage.cs
+	// example) requires both conversion operators between a reference-typed real type and its
+	// surrogate to pass null through unchanged — its deserializer round-trips a default/no-existing-
+	// value merge target through these operators before populating it. Real application code can
+	// never hit this branch (T is notnull), but the wire path depends on it, proven end-to-end via a
+	// real hosted gRPC call in Midgard's Infrastructure.Web.Server.Tests.
+
+	[Fact]
+	void OutcomeOfT_ExplicitUnwrap_OfNull_ReturnsDefault_DoesNotThrow()
+	{
+		Outcome<BoolResponse>? outcome = null;
+		var unwrapped = (BoolResponse?)outcome!;
+		unwrapped.ShouldBeNull();
+	}
+
+	[Fact]
+	void OutcomeOfT_ImplicitLift_OfNull_ReturnsNull_DoesNotThrow()
+	{
+		BoolResponse? value = null;
+		Outcome<BoolResponse>? outcome = value!;
+		outcome.ShouldBeNull();
+	}
 }

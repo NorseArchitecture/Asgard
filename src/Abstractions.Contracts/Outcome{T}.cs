@@ -115,19 +115,33 @@ public sealed class Outcome<T> : IUnion where T : notnull
 	/// <c>From</c>/<c>into</c>) — a handler may <c>return response;</c> directly instead of
 	/// <c>return Outcome&lt;T&gt;.Ok(response);</c>. Union API on its own merits, not wire
 	/// knowledge — this type still carries no serialization awareness.
+	///
+	/// Null-checked despite <typeparamref name="T"/> being <see langword="notnull"/>: protobuf-net's
+	/// surrogate contract (<c>SetSurrogate</c>) requires both conversion operators between a
+	/// reference-typed real type and its surrogate to pass <see langword="null"/> through unchanged
+	/// — its deserializer round-trips a default/no-existing-value merge target through these
+	/// operators before populating it. This branch exists for that wire-only scaffolding path, never
+	/// for real application code, which cannot construct a null <typeparamref name="T"/> in the first
+	/// place under the <see langword="notnull"/> constraint.
 	/// </summary>
 	[SuppressMessage("Design", "CA2225:Operator overloads have named alternates", Justification = "Ok(T) is the named alternate — this operator exists purely as ergonomic sugar over it, a second method with a different name would be pure duplication.")]
-	public static implicit operator Outcome<T>(T value) => Ok(value);
+	public static implicit operator Outcome<T>(T value) => value is null ? null! : Ok(value);
 
 	/// <summary>
 	/// Unwraps the success payload. Throws for a failed outcome — a caller that cannot prove
 	/// success ahead of time must pattern-match instead of converting. This is the one sanctioned
 	/// violence in this type's surface, deliberately explicit-cast-shaped so it reads as violence
 	/// at the call site.
+	///
+	/// Null-checked for the same reason as the implicit lift operator above: protobuf-net's
+	/// surrogate deserializer calls this on a default/no-existing-value merge target, which is
+	/// <see langword="null"/> now that this type is a class — passing <see langword="null"/> through
+	/// rather than throwing keeps that wire-only scaffolding path working without weakening the
+	/// real, application-facing "throws on Failed" contract below.
 	/// </summary>
 	/// <exception cref="InvalidOperationException">This outcome is the <see cref="Failed"/> case.</exception>
 	[SuppressMessage("Design", "CA2225:Operator overloads have named alternates", Justification = "Match(...) is the named alternate — this operator exists purely as ergonomic sugar over it, a second method with a different name would be pure duplication.")]
-	public static explicit operator T(Outcome<T> outcome) => outcome.Match(
+	public static explicit operator T(Outcome<T> outcome) => outcome is null ? default! : outcome.Match(
 		static ok => ok,
 		static problem => throw new InvalidOperationException(
 			$"Cannot convert a failed Outcome<{typeof(T).Name}> to its success payload (category: {problem.Category})."));
