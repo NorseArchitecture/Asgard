@@ -16,24 +16,16 @@ static class WireHostEmitter
 		builder.AppendLine("{");
 		foreach (var method in model.Methods)
 		{
-			// One shape throughout: void-success methods use responseType = "Unit" (never a separate
-			// non-generic Outcome path) — 2026-07-24 amendment. Outcome<Unit>.Ok needs its one required
-			// argument; Outcome<T>.Err never did, so the failure branch is already uniform.
-			var responseType = method.ResponseTypeName ?? "Unit";
+			// The service already returns Outcome<TResponse> directly (spec §9, 2026-07-24
+			// amendment) — the server never sends the Failed arm over the wire (it throws
+			// server-side before marshalling), so a successful call already carries a real
+			// Success<T> Outcome<T> the client can return unchanged, no Ok-wrapping ceremony.
+			var responseType = method.ResponseTypeName;
 			builder.AppendLine($"\tpublic async ValueTask<Outcome<{responseType}>> {method.Name}({method.RequestTypeName} request, CancellationToken cancellationToken = default)");
 			builder.AppendLine("\t{");
 			builder.AppendLine("\t\ttry");
 			builder.AppendLine("\t\t{");
-			if (method.ResponseTypeName is not null)
-			{
-				builder.AppendLine($"\t\t\tvar result = await service.{method.Name}(request).ConfigureAwait(false);");
-				builder.AppendLine($"\t\t\treturn Outcome<{responseType}>.Ok(result);");
-			}
-			else
-			{
-				builder.AppendLine($"\t\t\tawait service.{method.Name}(request).ConfigureAwait(false);");
-				builder.AppendLine($"\t\t\treturn Outcome<{responseType}>.Ok(Unit.Value);");
-			}
+			builder.AppendLine($"\t\t\treturn await service.{method.Name}(request).ConfigureAwait(false);");
 			builder.AppendLine("\t\t}");
 			builder.AppendLine("\t\tcatch (global::Grpc.Core.RpcException ex)");
 			builder.AppendLine("\t\t{");

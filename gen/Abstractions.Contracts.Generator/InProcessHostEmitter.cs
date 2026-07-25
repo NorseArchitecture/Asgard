@@ -60,12 +60,11 @@ static class InProcessHostEmitter
 			var validatorFieldName = "_" + char.ToLowerInvariant(method.Name[0]) + method.Name.Substring(1) + "Validator";
 			// One shape throughout: void-success methods use responseType = "Unit" via the
 			// IBehavior<,> family's TResponse — never a second, non-generic behavior/chain shape
-			// (2026-07-24 amendment). The only irreducible difference is at the innermost call: a
-			// bare Task response has no value to wrap, so it awaits the call and returns Unit.Value.
-			var responseType = method.ResponseTypeName ?? "Unit";
-			var innermostSuccessExpression = method.ResponseTypeName is not null
-				? $"Outcome<{responseType}>.Ok(await _service.{method.Name}(request).ConfigureAwait(false))"
-				: $"await AwaitThenUnit(_service.{method.Name}(request))";
+			// (2026-07-24 amendment). The service already returns Outcome<TResponse> directly
+			// (spec §9, 2026-07-24 amendment) — the innermost call awaits and returns it unchanged,
+			// no Ok-wrapping ceremony; that was only needed when the service returned a bare payload.
+			var responseType = method.ResponseTypeName;
+			var innermostSuccessExpression = $"await _service.{method.Name}(request).ConfigureAwait(false)";
 
 			builder.AppendLine($"\tpublic async ValueTask<Outcome<{responseType}>> {method.Name}({method.RequestTypeName} request, CancellationToken cancellationToken = default)");
 			builder.AppendLine("\t{");
@@ -79,15 +78,6 @@ static class InProcessHostEmitter
 			builder.AppendLine("\t\t\t\tauthorization.Handle(request, cancellationToken, () =>");
 			builder.AppendLine("\t\t\t\t\tvalidation.Handle(request, cancellationToken, async () =>");
 			builder.AppendLine($"\t\t\t\t\t\t{innermostSuccessExpression})))).ConfigureAwait(false);");
-			builder.AppendLine("\t}");
-		}
-		if (model.Methods.Any(m => m.ResponseTypeName is null))
-		{
-			builder.AppendLine();
-			builder.AppendLine("\tstatic async ValueTask<Outcome<Unit>> AwaitThenUnit(System.Threading.Tasks.Task task)");
-			builder.AppendLine("\t{");
-			builder.AppendLine("\t\tawait task.ConfigureAwait(false);");
-			builder.AppendLine("\t\treturn Outcome<Unit>.Ok(Unit.Value);");
 			builder.AppendLine("\t}");
 		}
 		builder.AppendLine("}");

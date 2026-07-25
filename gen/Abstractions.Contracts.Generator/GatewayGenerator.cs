@@ -27,6 +27,11 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 		"NORSE004", "Service method has no request parameter",
 		"Method '{0}' on a [GenerateGateway] interface takes no parameters — every gateway-generated method requires exactly one request parameter (spec §2.2); this is a malformed service interface, not a shape the generator can emit code for",
 		"Norse.Gateway", DiagnosticSeverity.Error, isEnabledByDefault: true);
+
+	static readonly DiagnosticDescriptor _returnTypeNotOutcome = new(
+		"NORSE005", "Service method does not return Task<Outcome<T>> or ValueTask<Outcome<T>>",
+		"Method '{0}' on a [GenerateGateway] interface must return Task<Outcome<T>> or ValueTask<Outcome<T>> — every Asgard-contracted service method returns the envelope directly (spec §9, 2026-07-24 amendment); this is a malformed service interface, not a shape the generator can emit code for",
+		"Norse.Gateway", DiagnosticSeverity.Error, isEnabledByDefault: true);
 #pragma warning restore RS2008
 
 	public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -51,9 +56,15 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 				if (mode == "Contract")
 					productionContext.AddSource($"{model.ContextName}Gateway.g.cs", ContractEmitter.Emit(model));
 				else if (mode == "WireHost")
+				{
 					productionContext.AddSource($"{model.ContextName}WireGateway.g.cs", WireHostEmitter.Emit(model));
+					productionContext.AddSource($"{model.ContextName}OutcomeSurrogates.g.cs", OutcomeSurrogatesEmitter.Emit(model));
+				}
 				else if (mode == "InProcessHost")
+				{
 					productionContext.AddSource($"{model.ContextName}InProcessGateway.g.cs", InProcessHostEmitter.Emit(model));
+					productionContext.AddSource($"{model.ContextName}OutcomeSurrogates.g.cs", OutcomeSurrogatesEmitter.Emit(model));
+				}
 			}
 		});
 	}
@@ -102,8 +113,12 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 					}
 					var policyName = authorize.NamedArguments.FirstOrDefault(kv => kv.Key == "Policy").Value.Value as string ?? "";
 					var requestType = member.Parameters[0].Type.Name;
-					var isGenericTask = member.ReturnType is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 1 } namedReturn;
-					var responseType = isGenericTask ? ((INamedTypeSymbol)member.ReturnType).TypeArguments[0].Name : null;
+					var responseType = ExtractOutcomePayloadType(member.ReturnType);
+					if (responseType is null)
+					{
+						diagnostics.Add(Diagnostic.Create(_returnTypeNotOutcome, member.Locations.FirstOrDefault() ?? Location.None, member.Name));
+						continue;
+					}
 					methods.Add(new GatewayMethodModel(member.Name, requestType, responseType, policyName));
 				}
 
@@ -122,6 +137,19 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 			}
 		}
 		return results.ToImmutable();
+	}
+
+	// member.ReturnType is expected to be Task<Outcome<T>> or ValueTask<Outcome<T>> — every
+	// Asgard-contracted service method returns the envelope directly (spec §9, 2026-07-24
+	// amendment); this unwraps two levels (the awaitable, then Outcome<T> itself) to reach T,
+	// rather than the pre-amendment single-level unwrap that wrapped a bare payload.
+	static string? ExtractOutcomePayloadType(ITypeSymbol returnType)
+	{
+		if (returnType is not INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 1 } awaitable)
+			return null;
+		if (awaitable.TypeArguments[0] is not INamedTypeSymbol { Name: "Outcome", IsGenericType: true, TypeArguments.Length: 1 } outcome)
+			return null;
+		return outcome.TypeArguments[0].Name;
 	}
 
 	static IEnumerable<INamedTypeSymbol> GetAllTypes(INamespaceSymbol root)

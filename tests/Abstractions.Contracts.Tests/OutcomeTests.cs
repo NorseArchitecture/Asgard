@@ -75,10 +75,54 @@ public sealed class OutcomeTests
 		failure.TryGetValue(out Success<BoolResponse> _).ShouldBeFalse();
 	}
 
+	// The struct-era "default(Outcome<T>) throws SwitchExpressionException on first consumption"
+	// test no longer applies — Outcome<T> is a class now (spec §9 amendment), so
+	// default(Outcome<BoolResponse>) is simply null, and "null is never a legitimate third state"
+	// is enforced by the nullable reference type system itself (a compile-time warning/error on
+	// any dereference), not a runtime SwitchExpressionException. Every real construction path
+	// (Ok/Err/the implicit lift) always returns a non-null instance — verified below.
+
 	[Fact]
-	void OutcomeOfT_Default_ThrowsOnMatch_MalformedByConstruction()
+	void OutcomeOfT_Ok_NeverReturnsNull()
 	{
-		var defaulted = default(Outcome<BoolResponse>);
-		Should.Throw<SwitchExpressionException>(() => defaulted.Match(value => value.Value, _ => false));
+		var outcome = Outcome<BoolResponse>.Ok(new BoolResponse { Value = true });
+		outcome.ShouldNotBeNull();
+	}
+
+	[Fact]
+	void OutcomeOfT_Err_NeverReturnsNull()
+	{
+		var outcome = Outcome<BoolResponse>.Err(ErrorCategory.Fault);
+		outcome.ShouldNotBeNull();
+	}
+
+	[Fact]
+	void OutcomeOfT_ImplicitLift_NeverReturnsNull()
+	{
+		Outcome<BoolResponse> outcome = new BoolResponse { Value = true };
+		outcome.ShouldNotBeNull();
+	}
+
+	// protobuf-net's SetSurrogate contract (verified against its own SurrogateForObjectUsage.cs
+	// example) requires both conversion operators between a reference-typed real type and its
+	// surrogate to pass null through unchanged — its deserializer round-trips a default/no-existing-
+	// value merge target through these operators before populating it. Real application code can
+	// never hit this branch (T is notnull), but the wire path depends on it, proven end-to-end via a
+	// real hosted gRPC call in Midgard's Infrastructure.Web.Server.Tests.
+
+	[Fact]
+	void OutcomeOfT_ExplicitUnwrap_OfNull_ReturnsDefault_DoesNotThrow()
+	{
+		Outcome<BoolResponse>? outcome = null;
+		var unwrapped = (BoolResponse?)outcome!;
+		unwrapped.ShouldBeNull();
+	}
+
+	[Fact]
+	void OutcomeOfT_ImplicitLift_OfNull_ReturnsNull_DoesNotThrow()
+	{
+		BoolResponse? value = null;
+		Outcome<BoolResponse>? outcome = value!;
+		outcome.ShouldBeNull();
 	}
 }
