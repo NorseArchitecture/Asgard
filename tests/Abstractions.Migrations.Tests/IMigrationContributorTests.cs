@@ -7,7 +7,7 @@ public sealed class IMigrationContributorTests
 	{
 		StubContributor stub = new();
 
-		await stub.MigrateAsync(CancellationToken.None);
+		await stub.MigrateAsync(TestContext.Current.CancellationToken);
 
 		stub.Invoked.ShouldBeTrue();
 	}

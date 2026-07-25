@@ -9,7 +9,7 @@ public sealed class IRequestHandlerTests
 	{
 		IRequestHandler<UnconstrainedRequest, bool> handler = new EchoHandler();
 
-		var result = await handler.Handle(new UnconstrainedRequest(), CancellationToken.None);
+		var result = await handler.Handle(new UnconstrainedRequest(), TestContext.Current.CancellationToken);
 
 		result.ShouldBeTrue();
 	}
