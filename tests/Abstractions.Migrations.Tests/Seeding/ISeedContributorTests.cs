@@ -59,9 +59,6 @@ public sealed class ISeedContributorTests
 	{
 		public string Name => "StubNoOverride";
 
-		public Task SeedAsync(CancellationToken cancellationToken)
-		{
-			return Task.CompletedTask;
-		}
+		public Task SeedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 	}
 }
