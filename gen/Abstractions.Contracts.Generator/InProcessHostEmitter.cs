@@ -95,11 +95,11 @@ static class InProcessHostEmitter
 					var authorization = new Norse.Infrastructure.Web.Server.Mediator.AuthorizationBehavior<{{requestTypeName}}, {{responseType}}>("{{policyName}}", _authorizationService, GetPrincipalAsync);
 					var validation = new Norse.Infrastructure.Web.Server.Mediator.ValidationBehavior<{{requestTypeName}}, {{responseType}}>({{validatorFieldName}});
 
-					return await telemetry.Handle(request, cancellationToken, () =>
-						exceptionTranslation.Handle(request, cancellationToken, () =>
-							authorization.Handle(request, cancellationToken, () =>
-								validation.Handle(request, cancellationToken, async () =>
-									{{innermostSuccessExpression}})))).ConfigureAwait(false);
+					return await telemetry.Handle(request, () =>
+						exceptionTranslation.Handle(request, () =>
+							authorization.Handle(request, () =>
+								validation.Handle(request, async () =>
+									{{innermostSuccessExpression}}, cancellationToken), cancellationToken), cancellationToken), cancellationToken).ConfigureAwait(false);
 				}
 			""";
 	}
