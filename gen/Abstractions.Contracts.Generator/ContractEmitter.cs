@@ -1,5 +1,5 @@
 using System.Text;
-using Norse.Abstractions.Generator;
+using Norse.Abstractions.Emit;
 
 namespace Norse.Abstractions.Contracts.Generator;
 

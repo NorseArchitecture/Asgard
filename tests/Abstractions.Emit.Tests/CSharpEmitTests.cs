@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Norse.Abstractions.Generator.Tests;
+namespace Norse.Abstractions.Emit.Tests;
 
 public sealed class CSharpEmitTests
 {

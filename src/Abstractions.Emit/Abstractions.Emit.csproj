@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<IsAotCompatible>false</IsAotCompatible>
+		<Description>Norse.Abstractions.Emit: the platform's netstandard2.0 generator-authoring toolkit — polyfills and helpers every Roslyn IIncrementalGenerator project needs (AppendCSharp raw-string emission, [StringSyntax] and IsExternalInit polyfills), so realm generator projects stop vendoring copies of the same handful of files. The IsExternalInit and StringSyntaxAttribute polyfills are meant for netstandard2.0 generator projects only — a net7.0-or-later consumer referencing this package directly gets a CS0433 collision with the BCL's own definitions of those types.</Description>
+	</PropertyGroup>
+</Project>
