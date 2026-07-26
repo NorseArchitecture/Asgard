@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<Description>Norse declared law: Outcome&lt;T&gt; (the platform's interior discriminated union — Success&lt;T&gt;/Failed(Problem); doctrine at Glitnir's the-two-unions.md), Problem/ErrorCategory/BoolResponse/Unit, and the GenerateGatewayAttribute that drives Asgard's GatewayGenerator (Contract/InProcessHost/WireHost emission). The single assembly other product contexts reference from Norse.Abstractions.</Description>
 	</PropertyGroup>
@@ -18,6 +18,10 @@
 			Properties="Configuration=$(Configuration)" />
 		<ItemGroup>
 			<None Include="../../gen/Abstractions.Contracts.Generator/bin/$(Configuration)/netstandard2.0/Norse.Abstractions.Contracts.Generator.dll"
+				Pack="true"
+				PackagePath="analyzers/dotnet/cs/"
+				Visible="false" />
+			<None Include="../../gen/Abstractions.Contracts.Generator/bin/$(Configuration)/netstandard2.0/Norse.Abstractions.Generator.dll"
 				Pack="true"
 				PackagePath="analyzers/dotnet/cs/"
 				Visible="false" />

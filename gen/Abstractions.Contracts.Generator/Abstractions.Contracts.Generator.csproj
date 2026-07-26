@@ -2,4 +2,7 @@
 	<PropertyGroup>
 		<Description>Norse.Abstractions.Contracts.Generator: emits per-service, Result-native Blazor gateways from a [GenerateGateway]-decorated service interface (contracts, WASM host, and composition-root artifacts — none of which is a Web.Server-only concern, hence the name). Bundled into Abstractions.Contracts's package (analyzers/dotnet/cs/), never referenced or packed standalone — see Abstractions.Contracts.csproj's IncludeGeneratorInPackage target.</Description>
 	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="../../src/Abstractions.Generator/Abstractions.Generator.csproj" />
+	</ItemGroup>
 </Project>
