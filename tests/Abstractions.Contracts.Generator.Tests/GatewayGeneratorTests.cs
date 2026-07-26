@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using System.ServiceModel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -13,18 +15,18 @@ static class GeneratorTestHarness
 			[CSharpSyntaxTree.ParseText(source)],
 			ReferenceAssemblies.Net110.Concat(
 			[
-				MetadataReference.CreateFromFile(typeof(System.ServiceModel.ServiceContractAttribute).Assembly.Location),
-				MetadataReference.CreateFromFile(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute).Assembly.Location),
-				MetadataReference.CreateFromFile(typeof(Norse.Abstractions.Contracts.GenerateGatewayAttribute).Assembly.Location),
+				MetadataReference.CreateFromFile(typeof(ServiceContractAttribute).Assembly.Location),
+				MetadataReference.CreateFromFile(typeof(AuthorizeAttribute).Assembly.Location),
+				MetadataReference.CreateFromFile(typeof(GenerateGatewayAttribute).Assembly.Location),
 			]),
 			new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-		var options = new TestAnalyzerConfigOptionsProvider(emissionMode);
-		var driver = CSharpGeneratorDriver.Create([new GatewayGenerator().AsSourceGenerator()])
+		TestAnalyzerConfigOptionsProvider options = new(emissionMode);
+		_ = CSharpGeneratorDriver.Create([new GatewayGenerator().AsSourceGenerator()])
 			.WithUpdatedAnalyzerConfigOptions(options)
 			.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
 
-		var generatedSources = outputCompilation.SyntaxTrees.Skip(1).Select(tree => tree.ToString()).ToArray();
+		string[] generatedSources = [.. outputCompilation.SyntaxTrees.Skip(1).Select(tree => tree.ToString())];
 		return (diagnostics, generatedSources);
 	}
 }

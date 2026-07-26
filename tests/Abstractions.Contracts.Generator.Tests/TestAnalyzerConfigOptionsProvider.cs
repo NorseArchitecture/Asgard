@@ -5,8 +5,10 @@ namespace Norse.Abstractions.Contracts.Generator.Tests;
 sealed class TestAnalyzerConfigOptionsProvider(string emissionMode) : AnalyzerConfigOptionsProvider
 {
 	public override AnalyzerConfigOptions GlobalOptions { get; } = new TestOptions(emissionMode);
-	public override AnalyzerConfigOptions GetOptions(Microsoft.CodeAnalysis.SyntaxTree tree) => GlobalOptions;
-	public override AnalyzerConfigOptions GetOptions(Microsoft.CodeAnalysis.AdditionalText textFile) => GlobalOptions;
+	public override AnalyzerConfigOptions GetOptions(Microsoft.CodeAnalysis.SyntaxTree tree) =>
+		GlobalOptions;
+	public override AnalyzerConfigOptions GetOptions(Microsoft.CodeAnalysis.AdditionalText textFile) =>
+		GlobalOptions;
 
 	sealed class TestOptions(string emissionMode) : AnalyzerConfigOptions
 	{
