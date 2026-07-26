@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
+using Norse.Abstractions.Emit;
 
 namespace Norse.Abstractions.Contracts.Generator;
 
@@ -53,15 +55,15 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 				switch (mode)
 				{
 					case "Contract":
-						productionContext.AddSource($"{model.ContextName}Gateway.g.cs", ContractEmitter.Emit(model));
+						productionContext.AddSource($"{model.ContextName}Gateway.g.cs", SourceText.From(ContractEmitter.Emit(model), Utf8NoBom.Encoding));
 						break;
 					case "WireHost":
-						productionContext.AddSource($"{model.ContextName}WireGateway.g.cs", WireHostEmitter.Emit(model));
-						productionContext.AddSource($"{model.ContextName}OutcomeSurrogates.g.cs", OutcomeSurrogatesEmitter.Emit(model));
+						productionContext.AddSource($"{model.ContextName}WireGateway.g.cs", SourceText.From(WireHostEmitter.Emit(model), Utf8NoBom.Encoding));
+						productionContext.AddSource($"{model.ContextName}OutcomeSurrogates.g.cs", SourceText.From(OutcomeSurrogatesEmitter.Emit(model), Utf8NoBom.Encoding));
 						break;
 					case "InProcessHost":
-						productionContext.AddSource($"{model.ContextName}InProcessGateway.g.cs", InProcessHostEmitter.Emit(model));
-						productionContext.AddSource($"{model.ContextName}OutcomeSurrogates.g.cs", OutcomeSurrogatesEmitter.Emit(model));
+						productionContext.AddSource($"{model.ContextName}InProcessGateway.g.cs", SourceText.From(InProcessHostEmitter.Emit(model), Utf8NoBom.Encoding));
+						productionContext.AddSource($"{model.ContextName}OutcomeSurrogates.g.cs", SourceText.From(OutcomeSurrogatesEmitter.Emit(model), Utf8NoBom.Encoding));
 						break;
 				}
 			}
