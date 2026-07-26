@@ -11,14 +11,19 @@ namespace Norse.Abstractions.Emit;
 /// </summary>
 public static class CSharpEmit
 {
-	/// <summary>
-	/// Appends the given C# code to the string builder. Identical to
-	/// <see cref="StringBuilder.AppendLine(string)"/> at runtime; the
-	/// <c>[StringSyntax("C#")]</c> annotation drives syntax highlighting in VS / Rider.
-	/// </summary>
 	/// <param name="sb">The string builder to append to.</param>
-	/// <param name="code">The C# code to append.</param>
-	/// <returns>The same string builder instance.</returns>
-	public static StringBuilder AppendCSharp(this StringBuilder sb, [StringSyntax("C#")] string code) =>
-		sb.AppendLine(code);
+	extension(StringBuilder sb)
+	{
+		/// <summary>
+		/// Appends the given C# code to the string builder, followed by a single line feed.
+		/// Always <c>\n</c>, never <see cref="Environment.NewLine"/> — generated source must be
+		/// byte-identical regardless of the build machine's OS, matching this platform's
+		/// deterministic-build convention. The <c>[StringSyntax("C#")]</c> annotation drives
+		/// syntax highlighting in VS / Rider.
+		/// </summary>
+		/// <param name="code">The C# code to append.</param>
+		/// <returns>The same string builder instance.</returns>
+		public StringBuilder AppendCSharp([StringSyntax("C#")] string code) =>
+			sb.Append($"{code}\n");
+	}
 }
