@@ -14,18 +14,17 @@ static class WireHostEmitter
 		builder.AppendLine();
 		builder.AppendLine($"sealed class {model.ContextName}WireGateway({model.ServiceInterfaceName} service) : I{model.ContextName}Gateway");
 		builder.AppendLine("{");
-		foreach (var method in model.Methods)
+		foreach (var (name, requestTypeName, responseType, _) in model.Methods)
 		{
 			// The service already returns Outcome<TResponse> directly (spec §9, 2026-07-24
 			// amendment) — the server never sends the Failed arm over the wire (it throws
 			// server-side before marshalling), so a successful call already carries a real
 			// Success<T> Outcome<T> the client can return unchanged, no Ok-wrapping ceremony.
-			var responseType = method.ResponseTypeName;
-			builder.AppendLine($"\tpublic async ValueTask<Outcome<{responseType}>> {method.Name}({method.RequestTypeName} request, CancellationToken cancellationToken = default)");
+			builder.AppendLine($"\tpublic async ValueTask<Outcome<{responseType}>> {name}({requestTypeName} request, CancellationToken cancellationToken = default)");
 			builder.AppendLine("\t{");
 			builder.AppendLine("\t\ttry");
 			builder.AppendLine("\t\t{");
-			builder.AppendLine($"\t\t\treturn await service.{method.Name}(request).ConfigureAwait(false);");
+			builder.AppendLine($"\t\t\treturn await service.{name}(request).ConfigureAwait(false);");
 			builder.AppendLine("\t\t}");
 			builder.AppendLine("\t\tcatch (global::Grpc.Core.RpcException ex)");
 			builder.AppendLine("\t\t{");

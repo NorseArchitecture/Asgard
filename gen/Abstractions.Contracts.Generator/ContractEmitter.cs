@@ -18,7 +18,7 @@ static class ContractEmitter
 		{
 			// Always Outcome<{responseType}>, responseType = "Unit" for void methods — never the bare
 			// "Outcome" alias spelling. Generated code must never depend on the consuming project
-			// happening to carry the alias file; only hand-written call sites opt into that ergonomic
+			// happening to carry the alias file; only handwritten call sites opt into that ergonomic
 			// shorthand (2026-07-24 review — this emitter was the one branch the Unit-consolidation
 			// pass missed; WireHostEmitter/InProcessHostEmitter already follow this rule).
 			var responseType = method.ResponseTypeName ?? "Unit";
