@@ -13,7 +13,7 @@
 		<Project Path="src/Abstractions.Backend/Abstractions.Backend.csproj" />
 		<Project Path="src/Abstractions.Components/Abstractions.Components.csproj" />
 		<Project Path="src/Abstractions.Contracts/Abstractions.Contracts.csproj" />
-		<Project Path="src/Abstractions.Generator/Abstractions.Generator.csproj" />
+		<Project Path="src/Abstractions.Emit/Abstractions.Emit.csproj" />
 		<Project Path="src/Abstractions.Migrations/Abstractions.Migrations.csproj" />
 		<Project Path="src/Abstractions.Web.Server/Abstractions.Web.Server.csproj" />
 		<Project Path="src/Abstractions.Worker/Abstractions.Worker.csproj" />
@@ -29,7 +29,7 @@
 		<Project Path="tests/Abstractions.Components.Tests/Abstractions.Components.Tests.csproj" />
 		<Project Path="tests/Abstractions.Contracts.Generator.Tests/Abstractions.Contracts.Generator.Tests.csproj" />
 		<Project Path="tests/Abstractions.Contracts.Tests/Abstractions.Contracts.Tests.csproj" />
-		<Project Path="tests/Abstractions.Generator.Tests/Abstractions.Generator.Tests.csproj" />
+		<Project Path="tests/Abstractions.Emit.Tests/Abstractions.Emit.Tests.csproj" />
 		<Project Path="tests/Abstractions.Migrations.Tests/Abstractions.Migrations.Tests.csproj" />
 		<Project Path="tests/Abstractions.Web.Server.Tests/Abstractions.Web.Server.Tests.csproj" />
 		<Project Path="tests/Abstractions.Worker.Tests/Abstractions.Worker.Tests.csproj" />

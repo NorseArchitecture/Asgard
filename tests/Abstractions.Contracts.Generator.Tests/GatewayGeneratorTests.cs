@@ -333,6 +333,62 @@ public sealed class GatewayGeneratorTests
 		generated.ShouldNotContain("AwaitThenUnit");
 	}
 
+	// Every other test here drives a single-method interface, which cannot catch a per-item join or
+	// separator regression: the last-item branch of ConstructorParams is the only branch a
+	// one-method interface ever takes, and there is no second method for a wrong join separator to
+	// space wrongly. InProcessHost carries the most per-item loops of the three modes, so the
+	// multi-method case is exercised there.
+	[Fact]
+	void InProcessHostMode_MultiMethodInterface_EmitsWellFormedConstructorListAndAdjacentMethods()
+	{
+		const string Source = """
+			using System.ServiceModel;
+			using Microsoft.AspNetCore.Authorization;
+			using Norse.Abstractions.Contracts;
+
+			namespace TestRealm.Services;
+
+			[GenerateGateway]
+			[ServiceContract]
+			public interface IWidgetService
+			{
+				[Authorize(Policy = "Widget.Read")]
+				[OperationContract]
+				Task<Outcome<WidgetResponse>> GetWidget(WidgetRequest request, CancellationToken cancellationToken = default);
+
+				[Authorize(Policy = "Widget.Delete")]
+				[OperationContract]
+				Task<Outcome<Unit>> DeleteWidget(DeleteWidgetRequest request, CancellationToken cancellationToken = default);
+			}
+
+			public sealed record WidgetRequest;
+			public sealed record DeleteWidgetRequest;
+			public sealed record WidgetResponse;
+			""";
+
+		var (diagnostics, sources) = GeneratorTestHarness.Run(Source, "InProcessHost");
+
+		diagnostics.ShouldBeEmpty();
+		var generated = sources.Single(s => s.Contains("WidgetInProcessGateway", StringComparison.Ordinal));
+
+		// Both methods survive the per-method loop, each with its own request/response types.
+		generated.ShouldContain("public async ValueTask<Outcome<WidgetResponse>> GetWidget(WidgetRequest request, CancellationToken cancellationToken = default)");
+		generated.ShouldContain("public async ValueTask<Outcome<Unit>> DeleteWidget(DeleteWidgetRequest request, CancellationToken cancellationToken = default)");
+
+		// ConstructorParams's separator branch: every validator parameter but the last ends in a
+		// comma; the last one closes the parameter list instead.
+		generated.ShouldContain("\t\tFluentValidation.IValidator<WidgetRequest> getWidgetValidator,\n");
+		generated.ShouldContain("\t\tFluentValidation.IValidator<DeleteWidgetRequest> deleteWidgetValidator)\n\t{");
+		generated.ShouldNotContain("deleteWidgetValidator,");
+		generated.ShouldNotContain(",,");
+		generated.ShouldNotContain(",)");
+
+		// Methods are joined with a bare "\n" — one newline, never a blank line between the closing
+		// brace of one method body and the next method's declaration.
+		generated.ShouldContain("\t}\n\tpublic async ValueTask<Outcome<Unit>> DeleteWidget(");
+		generated.ShouldNotContain("\t}\n\n\tpublic async");
+	}
+
 	[Fact]
 	void ContractMode_NeverEmitsProtobufNetReferences_SurrogateRegistrationIsHostOnly()
 	{

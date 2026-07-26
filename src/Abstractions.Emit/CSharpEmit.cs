@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace Norse.Abstractions.Generator;
+namespace Norse.Abstractions.Emit;
 
 /// <summary>
 /// Emission helper for Roslyn generator projects — see the house style rule in Bifröst's own
