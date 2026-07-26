@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<IsAotCompatible>false</IsAotCompatible>
+		<Description>Norse.Abstractions.Generator: the platform's netstandard2.0 generator-authoring toolkit — polyfills and helpers every Roslyn IIncrementalGenerator project needs (AppendCSharp raw-string emission, [StringSyntax] and IsExternalInit polyfills), so realm generator projects stop vendoring copies of the same handful of files.</Description>
+	</PropertyGroup>
+</Project>

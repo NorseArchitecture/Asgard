@@ -10,12 +10,13 @@
 	<Folder Name="/src/">
 		<File Path="src/Directory.Build.props" />
 		<File Path="src/Directory.Build.targets" />
-		<Project Path="src/Abstractions.Contracts/Abstractions.Contracts.csproj" />
-		<Project Path="src/Abstractions.Components/Abstractions.Components.csproj" />
 		<Project Path="src/Abstractions.Backend/Abstractions.Backend.csproj" />
-		<Project Path="src/Abstractions.Worker/Abstractions.Worker.csproj" />
-		<Project Path="src/Abstractions.Web.Server/Abstractions.Web.Server.csproj" />
+		<Project Path="src/Abstractions.Components/Abstractions.Components.csproj" />
+		<Project Path="src/Abstractions.Contracts/Abstractions.Contracts.csproj" />
+		<Project Path="src/Abstractions.Generator/Abstractions.Generator.csproj" />
 		<Project Path="src/Abstractions.Migrations/Abstractions.Migrations.csproj" />
+		<Project Path="src/Abstractions.Web.Server/Abstractions.Web.Server.csproj" />
+		<Project Path="src/Abstractions.Worker/Abstractions.Worker.csproj" />
 	</Folder>
 	<Folder Name="/gen/">
 		<File Path="gen/Directory.Build.props" />
@@ -24,12 +25,13 @@
 	<Folder Name="/tests/">
 		<File Path="tests/Directory.Build.props" />
 		<File Path="tests/Directory.Build.targets" />
-		<Project Path="tests/Abstractions.Contracts.Tests/Abstractions.Contracts.Tests.csproj" />
-		<Project Path="tests/Abstractions.Components.Tests/Abstractions.Components.Tests.csproj" />
 		<Project Path="tests/Abstractions.Backend.Tests/Abstractions.Backend.Tests.csproj" />
-		<Project Path="tests/Abstractions.Worker.Tests/Abstractions.Worker.Tests.csproj" />
-		<Project Path="tests/Abstractions.Web.Server.Tests/Abstractions.Web.Server.Tests.csproj" />
-		<Project Path="tests/Abstractions.Migrations.Tests/Abstractions.Migrations.Tests.csproj" />
+		<Project Path="tests/Abstractions.Components.Tests/Abstractions.Components.Tests.csproj" />
 		<Project Path="tests/Abstractions.Contracts.Generator.Tests/Abstractions.Contracts.Generator.Tests.csproj" />
+		<Project Path="tests/Abstractions.Contracts.Tests/Abstractions.Contracts.Tests.csproj" />
+		<Project Path="tests/Abstractions.Generator.Tests/Abstractions.Generator.Tests.csproj" />
+		<Project Path="tests/Abstractions.Migrations.Tests/Abstractions.Migrations.Tests.csproj" />
+		<Project Path="tests/Abstractions.Web.Server.Tests/Abstractions.Web.Server.Tests.csproj" />
+		<Project Path="tests/Abstractions.Worker.Tests/Abstractions.Worker.Tests.csproj" />
 	</Folder>
 </Solution>
