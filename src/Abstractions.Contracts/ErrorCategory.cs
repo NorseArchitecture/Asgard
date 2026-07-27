@@ -10,6 +10,8 @@ namespace Norse.Abstractions.Contracts;
 /// </summary>
 public enum ErrorCategory : byte
 {
+	/// <summary>Sentinel CLR default — never a valid category; a failure always names its cause.</summary>
+	Unspecified = 0,
 	/// <summary>Request shape or field-level validation failure.</summary>
 	Validation = 1,
 	/// <summary>Resource not found.</summary>

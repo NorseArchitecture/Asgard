@@ -9,6 +9,9 @@ namespace Norse.Abstractions.Contracts.Generator;
 [Generator(LanguageNames.CSharp)]
 public sealed class GatewayGenerator : IIncrementalGenerator
 {
+	// RS2008 wants an analyzer-release tracking ledger (AnalyzerReleases.Shipped/Unshipped.md); these
+	// diagnostics ship embedded in the contracts package, not as a standalone analyzer package with a
+	// release history — the ledger has no home here, so the rule is wrong in this context.
 #pragma warning disable RS2008
 	static readonly DiagnosticDescriptor _missingAuthorize = new(
 		"NORSE001", "Service method missing [Authorize]",
@@ -82,7 +85,8 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 			return results.ToImmutable();
 
 		// Compiled-symbol walk (own module + every referenced assembly), never source syntax trees — PackageReference-mode parity.
-		foreach (var assembly in new[] { compilation.Assembly }.Concat(compilation.SourceModule.ReferencedAssemblySymbols))
+		IAssemblySymbol[] assemblies = [compilation.Assembly, .. compilation.SourceModule.ReferencedAssemblySymbols];
+		foreach (var assembly in assemblies)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			foreach (var type in GetAllTypes(assembly.GlobalNamespace))
@@ -146,10 +150,8 @@ public sealed class GatewayGenerator : IIncrementalGenerator
 	// rather than the pre-amendment single-level unwrap that wrapped a bare payload.
 	static string? ExtractOutcomePayloadType(ITypeSymbol returnType) =>
 		returnType is not INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: 1 } awaitable ?
-			null : awaitable.TypeArguments[0] is not INamedTypeSymbol
-			{
-				Name: "Outcome", IsGenericType: true, TypeArguments.Length: 1
-			} outcome ?
+			null :
+			awaitable.TypeArguments[0] is not INamedTypeSymbol { Name: "Outcome", IsGenericType: true, TypeArguments.Length: 1 } outcome ?
 				null :
 				outcome.TypeArguments[0].Name;
 

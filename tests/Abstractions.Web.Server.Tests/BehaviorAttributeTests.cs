@@ -18,7 +18,7 @@ public sealed class BehaviorAttributeTests
 	[Fact]
 	void BehaviorAttribute_StoresBehaviorTypeAndAfter()
 	{
-		var attribute = new BehaviorAttribute(typeof(string), after: typeof(int));
+		BehaviorAttribute attribute = new(typeof(string), after: typeof(int));
 		attribute.BehaviorType.ShouldBe(typeof(string));
 		attribute.After.ShouldBe(typeof(int));
 	}
