@@ -1,9 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 	<PropertyGroup>
-		<Description>Norse web-server abstractions: IDeferredSignIn (the hosting-concern contract Midgard's Infrastructure.Web.Server implements against, so Himinbjorg's identity layer never depends on Midgard directly) and the mediator law surface (ICommandRequest&lt;TResponse&gt;, IRequestHandler, IBehavior, BehaviorAttribute) — the server-side law for the web tier. IWebHostPlugin and IDocumentRepository&lt;T&gt; are scaffolded, not yet implemented. Mutually invisible with Norse.Abstractions.Worker.</Description>
+		<Description>Norse web-server abstractions: IDeferredSignIn (the hosting-concern contract Midgard's Infrastructure.Web.Server implements against, so Himinbjorg's identity layer never depends on Midgard directly) and the mediator law surface — IRequestHandler, ISender/ISenderDispatch, IBehavior, IPrincipalAccessor — the server-side law for the web tier. Bundles the handler-registration generator (analyzers/dotnet/cs/), which discovers a realm's IRequestHandler/IValidator implementations at compile time and emits AddNorse{Realm}Handlers(). IWebHostPlugin and IDocumentRepository&lt;T&gt; are scaffolded, not yet implemented. Mutually invisible with Norse.Abstractions.Worker.</Description>
 	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="../Abstractions.Backend/Abstractions.Backend.csproj" />
 		<ProjectReference Include="../Abstractions.Contracts/Abstractions.Contracts.csproj" />
+		<ProjectReference
+			Include="../../gen/Abstractions.Web.Server.Generator/Abstractions.Web.Server.Generator.csproj"
+			OutputItemType="Analyzer"
+			ReferenceOutputAssembly="false" />
 	</ItemGroup>
+	<Target Name="IncludeGeneratorInPackage" BeforeTargets="_GetPackageFiles">
+		<MSBuild Projects="../../gen/Abstractions.Web.Server.Generator/Abstractions.Web.Server.Generator.csproj"
+			Targets="Build"
+			Properties="Configuration=$(Configuration)" />
+		<ItemGroup>
+			<None Include="../../gen/Abstractions.Web.Server.Generator/bin/$(Configuration)/netstandard2.0/Norse.Abstractions.Web.Server.Generator.dll"
+				Pack="true"
+				PackagePath="analyzers/dotnet/cs/"
+				Visible="false" />
+			<None Include="../../gen/Abstractions.Web.Server.Generator/bin/$(Configuration)/netstandard2.0/Norse.Abstractions.Emit.dll"
+				Pack="true"
+				PackagePath="analyzers/dotnet/cs/"
+				Visible="false" />
+		</ItemGroup>
+	</Target>
 </Project>

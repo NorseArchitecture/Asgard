@@ -20,17 +20,17 @@
 	</Folder>
 	<Folder Name="/gen/">
 		<File Path="gen/Directory.Build.props" />
-		<Project Path="gen/Abstractions.Contracts.Generator/Abstractions.Contracts.Generator.csproj" />
+		<Project Path="gen/Abstractions.Web.Server.Generator/Abstractions.Web.Server.Generator.csproj" />
 	</Folder>
 	<Folder Name="/tests/">
 		<File Path="tests/Directory.Build.props" />
 		<File Path="tests/Directory.Build.targets" />
 		<Project Path="tests/Abstractions.Backend.Tests/Abstractions.Backend.Tests.csproj" />
 		<Project Path="tests/Abstractions.Components.Tests/Abstractions.Components.Tests.csproj" />
-		<Project Path="tests/Abstractions.Contracts.Generator.Tests/Abstractions.Contracts.Generator.Tests.csproj" />
 		<Project Path="tests/Abstractions.Contracts.Tests/Abstractions.Contracts.Tests.csproj" />
 		<Project Path="tests/Abstractions.Emit.Tests/Abstractions.Emit.Tests.csproj" />
 		<Project Path="tests/Abstractions.Migrations.Tests/Abstractions.Migrations.Tests.csproj" />
+		<Project Path="tests/Abstractions.Web.Server.Generator.Tests/Abstractions.Web.Server.Generator.Tests.csproj" />
 		<Project Path="tests/Abstractions.Web.Server.Tests/Abstractions.Web.Server.Tests.csproj" />
 		<Project Path="tests/Abstractions.Worker.Tests/Abstractions.Worker.Tests.csproj" />
 	</Folder>
