@@ -85,6 +85,7 @@ public sealed class HandlerRegistrationGeneratorTests
 		using Microsoft.AspNetCore.Authorization;
 		using Norse.Abstractions.Contracts;
 		using Norse.Abstractions.Web.Server.Mediator;
+		using FluentValidation;
 
 		namespace Norse.Identity.Web.Server;
 
@@ -98,6 +99,8 @@ public sealed class HandlerRegistrationGeneratorTests
 			public ValueTask<Outcome<BoolResponse>> Handle(LoginCommand request, CancellationToken cancellationToken = default) =>
 				ValueTask.FromResult(Outcome<BoolResponse>.Ok(new BoolResponse { Value = true }));
 		}
+
+		public sealed class LoginWireValidator : AbstractValidator<LoginWire>;
 		""";
 
 	[Fact]
@@ -108,6 +111,17 @@ public sealed class HandlerRegistrationGeneratorTests
 			"AddScoped<global::FluentValidation.IValidator<global::Norse.Identity.Web.Server.LoginCommand>, " +
 			"global::Norse.Abstractions.Web.Server.Mediator.CommandRequestValidator<global::Norse.Identity.Web.Server.LoginCommand, " +
 			"global::Norse.Identity.Web.Server.LoginWire, global::Norse.Abstractions.Contracts.BoolResponse>>");
+	}
+
+	[Fact]
+	void Also_registers_the_wire_types_own_validator_under_IValidator_of_the_wire_type()
+	{
+		// The adapter's ctor resolves IEnumerable<IValidator<TWire>> from DI — without this
+		// registration the wire type's real validator (Heimdall's, in production) would never run.
+		var generated = Generate(WrapperContract);
+		generated.ShouldContain(
+			"AddScoped<global::FluentValidation.IValidator<global::Norse.Identity.Web.Server.LoginWire>, " +
+			"global::Norse.Identity.Web.Server.LoginWireValidator>");
 	}
 
 	[Fact]

@@ -85,16 +85,27 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 
 		var format = SymbolDisplayFormat.FullyQualifiedFormat; // const is illegal on a reference type — local it is
 		var models = handlers
-			.Select(h => new HandlerModel(
-				h.Handler.ToDisplayString(format),
-				h.Request.ToDisplayString(format),
-				h.Response.ToDisplayString(format),
-				[.. validators
-					.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, h.Request))
-					.Select(v => v.Validator.ToDisplayString(format))
-					.Distinct()
-					.OrderBy(v => v, StringComparer.Ordinal)],
-				WrapperWireTypeName(h.Request, commandRequestBase, format)))
+			.Select(h =>
+			{
+				var wireType = WrapperWireType(h.Request, commandRequestBase);
+				return new HandlerModel(
+					h.Handler.ToDisplayString(format),
+					h.Request.ToDisplayString(format),
+					h.Response.ToDisplayString(format),
+					[.. validators
+						.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, h.Request))
+						.Select(v => v.Validator.ToDisplayString(format))
+						.Distinct()
+						.OrderBy(v => v, StringComparer.Ordinal)],
+					wireType?.ToDisplayString(format),
+					wireType is null ?
+						[] :
+						[.. validators
+							.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, wireType))
+							.Select(v => v.Validator.ToDisplayString(format))
+							.Distinct()
+							.OrderBy(v => v, StringComparer.Ordinal)]);
+			})
 			.OrderBy(m => m.RequestTypeName, StringComparer.Ordinal)
 			.ToImmutableArray();
 
@@ -122,17 +133,17 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 	/// <summary>
 	/// Walks <paramref name="request"/>'s base-type chain looking for a closed
 	/// <c>CommandRequest&lt;TRequest,TResponse&gt;</c> — matched by symbol against the open generic
-	/// definition, never by name — and returns its wrapped wire type, global-qualified. Null when
+	/// definition, never by name — and returns its wrapped wire type symbol. Null when
 	/// <paramref name="request"/> is not a wrapper (the ordinary, non-wrapped-request case).
 	/// </summary>
-	static string? WrapperWireTypeName(ITypeSymbol request, INamedTypeSymbol? commandRequestBase, SymbolDisplayFormat format)
+	static ITypeSymbol? WrapperWireType(ITypeSymbol request, INamedTypeSymbol? commandRequestBase)
 	{
 		if (commandRequestBase is null)
 			return null;
 
 		for (var current = request.BaseType; current is not null; current = current.BaseType)
 			if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, commandRequestBase))
-				return current.TypeArguments[0].ToDisplayString(format);
+				return current.TypeArguments[0];
 
 		return null;
 	}
