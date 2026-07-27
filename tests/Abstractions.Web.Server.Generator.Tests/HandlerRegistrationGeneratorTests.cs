@@ -37,6 +37,43 @@ public sealed class HandlerRegistrationGeneratorTests
 	}
 
 	[Fact]
+	void Validator_registrations_are_emitted_in_ordinal_order_regardless_of_declaration_order()
+	{
+		// ZetaValidator is declared before AlphaValidator — reverse of ordinal order — so a pass
+		// here can only mean the emitter sorts, not that it happens to preserve source/symbol
+		// enumeration order (spec: "same input -> identical bytes" requires this be deterministic
+		// regardless of Roslyn's undocumented symbol-enumeration order).
+		const string TwoValidatorsReverseOrdinal = """
+			using Microsoft.AspNetCore.Authorization;
+			using Norse.Abstractions.Contracts;
+			using Norse.Abstractions.Web.Server.Mediator;
+			using FluentValidation;
+
+			namespace Norse.Identity.Web.Server;
+
+			[Authorize(Policy = "AuthN.Public")]
+			public sealed record LoginRequest : ICommandRequest<BoolResponse>;
+
+			sealed class LoginHandler : IRequestHandler<LoginRequest, BoolResponse>
+			{
+				public ValueTask<Outcome<BoolResponse>> Handle(LoginRequest request, CancellationToken cancellationToken = default) =>
+					ValueTask.FromResult(Outcome<BoolResponse>.Ok(new BoolResponse { Value = true }));
+			}
+
+			public sealed class ZetaValidator : AbstractValidator<LoginRequest>;
+			public sealed class AlphaValidator : AbstractValidator<LoginRequest>;
+			""";
+
+		var generated = Generate(TwoValidatorsReverseOrdinal);
+
+		var alphaIndex = generated.IndexOf("Norse.Identity.Web.Server.AlphaValidator", StringComparison.Ordinal);
+		var zetaIndex = generated.IndexOf("Norse.Identity.Web.Server.ZetaValidator", StringComparison.Ordinal);
+		alphaIndex.ShouldBeGreaterThan(-1);
+		zetaIndex.ShouldBeGreaterThan(-1);
+		alphaIndex.ShouldBeLessThan(zetaIndex);
+	}
+
+	[Fact]
 	void NORSE011_fires_when_a_handled_request_carries_no_authorize_policy()
 	{
 		var withoutAuthorize = Contract.Replace("[Authorize(Policy = \"AuthN.Public\")]", "");

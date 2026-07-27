@@ -91,7 +91,8 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 				[.. validators
 					.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, h.Request))
 					.Select(v => v.Validator.ToDisplayString(format))
-					.Distinct()]))
+					.Distinct()
+					.OrderBy(v => v, StringComparer.Ordinal)]))
 			.OrderBy(m => m.RequestTypeName, StringComparer.Ordinal)
 			.ToImmutableArray();
 
