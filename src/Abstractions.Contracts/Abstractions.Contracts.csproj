@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Description>Norse declared law: Outcome&lt;T&gt; (the platform's interior discriminated union — Success&lt;T&gt;/Failed(Problem); doctrine at Glitnir's the-two-unions.md), Problem/ErrorCategory/BoolResponse/Unit, and the IRequest/ICommandRequest/IQueryRequest marker family. The single assembly other product contexts reference from Norse.Abstractions.</Description>
+		<Description>Norse declared law: Outcome&lt;T&gt; (the platform's interior discriminated union — Success&lt;T&gt;/Failed(Problem); doctrine at Glitnir's the-two-unions.md) and Problem/ErrorCategory/BoolResponse/Unit. The mediator marker family (IRequest/ICommandRequest/IQueryRequest) lives in Norse.Abstractions.Web.Server instead — server-only law, so a WASM-shipped wire assembly referencing only this package structurally cannot implement them. The single assembly other product contexts reference from Norse.Abstractions.</Description>
 	</PropertyGroup>
 	<ItemGroup>
 		<NorseRef Include="Primitives">

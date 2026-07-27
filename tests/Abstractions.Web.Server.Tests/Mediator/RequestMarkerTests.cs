@@ -1,4 +1,6 @@
-namespace Norse.Abstractions.Contracts.Tests;
+using Norse.Abstractions.Web.Server.Mediator;
+
+namespace Norse.Abstractions.Web.Server.Tests.Mediator;
 
 public sealed class RequestMarkerTests
 {
