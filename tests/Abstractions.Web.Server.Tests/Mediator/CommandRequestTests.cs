@@ -1,4 +1,3 @@
-using Norse.Abstractions.Contracts;
 using Norse.Abstractions.Web.Server.Mediator;
 
 namespace Norse.Abstractions.Web.Server.Tests.Mediator;
