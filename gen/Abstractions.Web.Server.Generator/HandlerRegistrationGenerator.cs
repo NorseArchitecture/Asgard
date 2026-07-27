@@ -47,6 +47,7 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 		var handlerInterface = compilation.GetTypeByMetadataName("Norse.Abstractions.Web.Server.Mediator.IRequestHandler`2");
 		var validatorInterface = compilation.GetTypeByMetadataName("FluentValidation.IValidator`1");
 		var authorizeAttribute = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Authorization.AuthorizeAttribute");
+		var commandRequestBase = compilation.GetTypeByMetadataName("Norse.Abstractions.Web.Server.Mediator.CommandRequest`2");
 		if (handlerInterface is null)
 			return DiscoveryResult.Empty(compilation);
 
@@ -84,15 +85,27 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 
 		var format = SymbolDisplayFormat.FullyQualifiedFormat; // const is illegal on a reference type — local it is
 		var models = handlers
-			.Select(h => new HandlerModel(
-				h.Handler.ToDisplayString(format),
-				h.Request.ToDisplayString(format),
-				h.Response.ToDisplayString(format),
-				[.. validators
-					.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, h.Request))
-					.Select(v => v.Validator.ToDisplayString(format))
-					.Distinct()
-					.OrderBy(v => v, StringComparer.Ordinal)]))
+			.Select(h =>
+			{
+				var wireType = WrapperWireType(h.Request, commandRequestBase);
+				return new HandlerModel(
+					h.Handler.ToDisplayString(format),
+					h.Request.ToDisplayString(format),
+					h.Response.ToDisplayString(format),
+					[.. validators
+						.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, h.Request))
+						.Select(v => v.Validator.ToDisplayString(format))
+						.Distinct()
+						.OrderBy(v => v, StringComparer.Ordinal)],
+					wireType?.ToDisplayString(format),
+					wireType is null ?
+						[] :
+						[.. validators
+							.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, wireType))
+							.Select(v => v.Validator.ToDisplayString(format))
+							.Distinct()
+							.OrderBy(v => v, StringComparer.Ordinal)]);
+			})
 			.OrderBy(m => m.RequestTypeName, StringComparer.Ordinal)
 			.ToImmutableArray();
 
@@ -116,6 +129,24 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 
 	static string RootNamespace(Compilation compilation) =>
 		compilation.AssemblyName ?? "Norse.Generated";
+
+	/// <summary>
+	/// Walks <paramref name="request"/>'s base-type chain looking for a closed
+	/// <c>CommandRequest&lt;TRequest,TResponse&gt;</c> — matched by symbol against the open generic
+	/// definition, never by name — and returns its wrapped wire type symbol. Null when
+	/// <paramref name="request"/> is not a wrapper (the ordinary, non-wrapped-request case).
+	/// </summary>
+	static ITypeSymbol? WrapperWireType(ITypeSymbol request, INamedTypeSymbol? commandRequestBase)
+	{
+		if (commandRequestBase is null)
+			return null;
+
+		for (var current = request.BaseType; current is not null; current = current.BaseType)
+			if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, commandRequestBase))
+				return current.TypeArguments[0];
+
+		return null;
+	}
 
 	sealed record DiscoveryResult(string AssemblyName, string RootNamespace, ImmutableArray<HandlerModel> Handlers, ImmutableArray<Diagnostic> Diagnostics)
 	{
