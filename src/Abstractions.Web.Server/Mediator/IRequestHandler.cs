@@ -1,11 +1,7 @@
 namespace Norse.Abstractions.Web.Server.Mediator;
 
 /// <summary>
-/// Handles a single request and returns a response of type <typeparamref name="TResponse"/>. Deliberately
-/// unconstrained — nothing in the platform dispatches through a generic sender yet, so requiring
-/// <typeparamref name="TRequest"/> to implement <see cref="ICommandRequest{TResponse}"/> was dead weight
-/// that only forced WASM-referenced wire types to reference this server-only assembly. Revisit once a real
-/// generic dispatcher exists.
+/// Handles a single request and returns a response of type <typeparamref name="TResponse"/>. Deliberately unconstrained.
 /// </summary>
 public interface IRequestHandler<in TRequest, TResponse>
 {
