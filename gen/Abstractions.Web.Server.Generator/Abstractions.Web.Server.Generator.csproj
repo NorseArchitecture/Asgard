@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<Description>Norse.Abstractions.Web.Server.Generator: discovers a realm's IRequestHandler and IValidator implementations at compile time and emits the AddNorse{Realm}Handlers() registration extension — handler, dispatch-map, and validator registrations, replacing assembly scanning with compile-time wiring. Bundled into Abstractions.Web.Server's package (analyzers/dotnet/cs/), never referenced or packed standalone.</Description>
+		<GetTargetPathDependsOn>$(GetTargetPathDependsOn);_NorseIncludeEmitDependencyTargetPath</GetTargetPathDependsOn>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="../../src/Abstractions.Emit/Abstractions.Emit.csproj" />
+	</ItemGroup>
+</Project>
