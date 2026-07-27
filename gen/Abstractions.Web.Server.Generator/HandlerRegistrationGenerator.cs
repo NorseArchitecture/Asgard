@@ -47,6 +47,7 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 		var handlerInterface = compilation.GetTypeByMetadataName("Norse.Abstractions.Web.Server.Mediator.IRequestHandler`2");
 		var validatorInterface = compilation.GetTypeByMetadataName("FluentValidation.IValidator`1");
 		var authorizeAttribute = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Authorization.AuthorizeAttribute");
+		var commandRequestBase = compilation.GetTypeByMetadataName("Norse.Abstractions.Web.Server.Mediator.CommandRequest`2");
 		if (handlerInterface is null)
 			return DiscoveryResult.Empty(compilation);
 
@@ -92,7 +93,8 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 					.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, h.Request))
 					.Select(v => v.Validator.ToDisplayString(format))
 					.Distinct()
-					.OrderBy(v => v, StringComparer.Ordinal)]))
+					.OrderBy(v => v, StringComparer.Ordinal)],
+				WrapperWireTypeName(h.Request, commandRequestBase, format)))
 			.OrderBy(m => m.RequestTypeName, StringComparer.Ordinal)
 			.ToImmutableArray();
 
@@ -116,6 +118,24 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 
 	static string RootNamespace(Compilation compilation) =>
 		compilation.AssemblyName ?? "Norse.Generated";
+
+	/// <summary>
+	/// Walks <paramref name="request"/>'s base-type chain looking for a closed
+	/// <c>CommandRequest&lt;TRequest,TResponse&gt;</c> — matched by symbol against the open generic
+	/// definition, never by name — and returns its wrapped wire type, global-qualified. Null when
+	/// <paramref name="request"/> is not a wrapper (the ordinary, non-wrapped-request case).
+	/// </summary>
+	static string? WrapperWireTypeName(ITypeSymbol request, INamedTypeSymbol? commandRequestBase, SymbolDisplayFormat format)
+	{
+		if (commandRequestBase is null)
+			return null;
+
+		for (var current = request.BaseType; current is not null; current = current.BaseType)
+			if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, commandRequestBase))
+				return current.TypeArguments[0].ToDisplayString(format);
+
+		return null;
+	}
 
 	sealed record DiscoveryResult(string AssemblyName, string RootNamespace, ImmutableArray<HandlerModel> Handlers, ImmutableArray<Diagnostic> Diagnostics)
 	{

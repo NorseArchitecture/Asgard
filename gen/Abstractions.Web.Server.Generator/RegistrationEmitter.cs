@@ -41,6 +41,10 @@ static class RegistrationEmitter
 			};
 			lines.AddRange(h.ValidatorTypeNames.Select(v =>
 				$"\t\tglobal::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddScoped<global::FluentValidation.IValidator<{h.RequestTypeName}>, {v}>(services);"));
+			if (h.WrapperWireTypeName is not null)
+				lines.Add(
+					$"\t\tglobal::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddScoped<global::FluentValidation.IValidator<{h.RequestTypeName}>, " +
+					$"global::Norse.Abstractions.Web.Server.Mediator.CommandRequestValidator<{h.RequestTypeName}, {h.WrapperWireTypeName}, {h.ResponseTypeName}>>(services);");
 			return string.Join("\n", lines);
 		}));
 }
