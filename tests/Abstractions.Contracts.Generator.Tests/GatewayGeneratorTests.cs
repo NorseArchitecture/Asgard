@@ -68,6 +68,19 @@ public sealed class GatewayGeneratorTests
 	}
 
 	[Fact]
+	void ContractMode_EmitsGatewayInterface_SuppressesCS1591_SoConsumersNeverCarryTheNoWarnThemselves()
+	{
+		// The emitted interface is public with no XML doc comments — CS1591 must be suppressed here,
+		// in the generator, not worked around via <NoWarn> in every consuming .csproj.
+		var (diagnostics, sources) = GeneratorTestHarness.Run(ServiceInterfaceSource, "Contract");
+
+		diagnostics.ShouldBeEmpty();
+		var gatewaySource = sources.ShouldHaveSingleItem();
+		gatewaySource.ShouldContain("#pragma warning disable CS1591");
+		gatewaySource.ShouldContain("#pragma warning restore CS1591");
+	}
+
+	[Fact]
 	void ContractMode_VoidSuccessMethod_EmitsOutcomeOfUnitExplicitly_NeverBareAlias()
 	{
 		const string Source = """

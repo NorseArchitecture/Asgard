@@ -22,10 +22,12 @@ static class ContractEmitter
 
 				  using Norse.Abstractions.Contracts;
 
+				  #pragma warning disable CS1591 // Generated contract: no XML doc comments, consumers never carry this NoWarn themselves.
 				  public interface I{{model.ContextName}}Gateway
 				  {
 				  {{model.Methods()}}
 				  }
+				  #pragma warning restore CS1591
 				  """);
 			return builder.ToString();
 		}
