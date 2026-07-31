@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Description>Norse server-side shared contracts, visible to both Worker and Web.Server. Egress contracts live under the Norse.Abstractions.Backend.Egress namespace: HttpResult&lt;T&gt;, EgressError, FailureKind, ResponseDisposition, EgressClassifier, IResponseParser&lt;T&gt;, IHttpEgress. Additional server-side shared concerns land here as they emerge; a concern graduates to its own assembly only if a hard wall requires it.</Description>
+		<Description>Norse server-side shared contracts, visible to both Worker and Web.Server. Egress contracts live under the Norse.Abstractions.Backend.Egress namespace: HttpResult&lt;T&gt;, EgressError, FailureKind, ResponseDisposition, EgressClassifier, IResponseParser&lt;T&gt;, IHttpEgress. Additional server-side shared concerns land here as they emerge; a concern graduates to its own assembly only if a hard wall requires it. Persistence read law lives here too: IViewBearer&lt;TView&gt;, IReadRepository&lt;TView&gt;, and [NotProjected] — the well-and-wire doctrine (Glitnir 2026-07-30); the write-side contract lands beside them when designed.</Description>
 	</PropertyGroup>
 	<ItemGroup>
 		<NorseRef Include="Primitives">
