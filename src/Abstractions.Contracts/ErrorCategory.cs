@@ -29,5 +29,11 @@ public enum ErrorCategory : byte
 	/// <summary>Caller is authenticated but lacks the required policy.</summary>
 	Forbidden = 8,
 	/// <summary>Unmapped failure. Always carries a <see cref="Problem.CorrelationId"/>.</summary>
-	Fault = 9
+	Fault = 9,
+	/// <summary>
+	/// A Single-cardinality read asserted exactly one match and the data returned more — an expected
+	/// domain state on the wire, but a data-integrity smell worth telemetry even when handled
+	/// (well-and-wire spec §3.2). Not a peer of <see cref="NotFound"/> in severity.
+	/// </summary>
+	MultipleMatches = 10
 }
