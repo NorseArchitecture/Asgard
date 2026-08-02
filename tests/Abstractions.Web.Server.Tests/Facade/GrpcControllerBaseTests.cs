@@ -129,6 +129,24 @@ public sealed class GrpcControllerBaseTests
 	}
 
 	[Fact]
+	async Task A_failure_result_negotiates_to_the_RFC_9457_problem_media_types_not_the_class_level_Produces_pair()
+	{
+		// GrpcControllerBase carries a class-level [Produces("application/json", "application/xml")] for
+		// success payloads. Left alone, MVC's ProducesAttribute back-fills ContentTypes on ANY ObjectResult
+		// that doesn't already set them — including a Problem() result — locking failure responses to the
+		// plain media types instead of the RFC's problem+json/problem+xml, and routing an XML-negotiated
+		// failure straight into XmlContractOutputFormatter, which has no shape for ProblemDetails and would
+		// throw. ToProblemResult must set ContentTypes itself so the class-level attribute never gets the
+		// chance to.
+		var controller = CreateController();
+
+		var result = await controller.Fold(ValueTask.FromResult(Outcome<string>.Err(ErrorCategory.Conflict)));
+
+		var objectResult = result.Result.ShouldBeOfType<ObjectResult>();
+		objectResult.ContentTypes.ShouldBe(["application/problem+json", "application/problem+xml"]);
+	}
+
+	[Fact]
 	async Task Fault_carries_the_correlation_id_as_an_extension()
 	{
 		var controller = CreateController();

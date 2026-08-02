@@ -10,9 +10,12 @@ namespace Norse.Abstractions.Web.Server.Facade;
 /// landing site for the <c>Outcome&lt;T&gt;</c> → <see cref="ActionResult{TValue}"/> fold, built from
 /// <see cref="ControllerBase"/> natives only (<see cref="ControllerBase.Ok(object)"/>/
 /// <see cref="ControllerBase.NotFound()"/>/<c>ControllerBase.Problem</c>) — never a Midgard
-/// reference; problem+xml/problem+json content negotiation and rendering are the host-registered
-/// formatters' job (Midgard's <c>ProblemXmlWriter</c> and MVC's built-in <c>application/problem+json</c>
-/// support).
+/// reference. A failure result explicitly sets its own <see cref="ObjectResult.ContentTypes"/> to the
+/// RFC 9457 media types (<c>application/problem+json</c>/<c>application/problem+xml</c>) — otherwise
+/// the class-level <see cref="ConsumesAttribute"/>/<see cref="ProducesAttribute"/> pair back-fills the
+/// plain ones onto every response that doesn't set its own, including this one. Rendering itself is the
+/// host-registered formatters' job (Midgard's <c>ProblemXmlWriter</c>/<c>ProblemXmlOutputFormatter</c>
+/// and MVC's built-in <c>application/problem+json</c> support).
 ///
 /// This fold is the text-channel counterpart to Midgard's <c>OutcomeServerInterceptor</c> (the gRPC
 /// edge's own <c>Outcome&lt;T&gt;</c> fold, via <c>ProblemExtensions.ToRpcException</c>) and the two are
@@ -77,6 +80,15 @@ public abstract class GrpcControllerBase : ControllerBase
 			extensions["correlationId"] = correlationId;
 		}
 
-		return Problem(statusCode: statusCode, title: problem.Category.ToString(), extensions: extensions);
+		var result = Problem(statusCode: statusCode, title: problem.Category.ToString(), extensions: extensions);
+
+		// The class-level [Produces("application/json", "application/xml")] back-fills ContentTypes on
+		// any ObjectResult that doesn't already set them — a failure result must set its own RFC 9457
+		// media types here, before that attribute gets the chance to lock it to the plain ones. Left to
+		// the attribute, an XML-negotiated failure would route into XmlContractOutputFormatter, which
+		// carries no shape for ProblemDetails and throws.
+		result.ContentTypes.Add("application/problem+json");
+		result.ContentTypes.Add("application/problem+xml");
+		return result;
 	}
 }
