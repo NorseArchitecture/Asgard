@@ -33,4 +33,27 @@ public sealed class SubjectCryptoScopeTests
 			SubjectCryptoScope.CurrentSubject.ShouldBe(subject);
 		}
 	}
+
+	[Fact]
+	void Disposing_a_scope_twice_is_a_no_op_and_does_not_corrupt_the_ambient_value()
+	{
+		var subject = Guid.NewGuid();
+		var scope = SubjectCryptoScope.Begin(subject);
+		scope.Dispose();
+		SubjectCryptoScope.CurrentSubject.ShouldBeNull();
+
+		Should.NotThrow(scope.Dispose);
+		SubjectCryptoScope.CurrentSubject.ShouldBeNull();
+	}
+
+	[Fact]
+	void Disposing_an_outer_scope_while_an_inner_scope_is_still_open_throws()
+	{
+		var outer = Guid.NewGuid();
+		var inner = Guid.NewGuid();
+		var outerScope = SubjectCryptoScope.Begin(outer);
+		using var innerScope = SubjectCryptoScope.Begin(inner);
+
+		Should.Throw<InvalidOperationException>(outerScope.Dispose);
+	}
 }

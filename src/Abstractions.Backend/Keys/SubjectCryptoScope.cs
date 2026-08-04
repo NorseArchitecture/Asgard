@@ -19,12 +19,30 @@ public static class SubjectCryptoScope
 	{
 		var prior = _ambient.Value;
 		_ambient.Value = subjectId;
-		return new Scope(prior);
+		return new Scope(subjectId, prior);
 	}
 
-	sealed class Scope(Guid? prior) : IDisposable
+	sealed class Scope(Guid subjectId, Guid? prior) : IDisposable
 	{
-		public void Dispose() =>
+		bool _disposed;
+
+		/// <exception cref="InvalidOperationException">
+		/// The ambient subject no longer matches what this scope established — a scope other than
+		/// the most-recently-created one was disposed. Scopes must be disposed in reverse order of
+		/// creation (most-recently-created first); a second call after this scope has already
+		/// disposed is a no-op, not a re-throw.
+		/// </exception>
+		public void Dispose()
+		{
+			if (_disposed)
+				return;
+
+			if (_ambient.Value != subjectId)
+				throw new InvalidOperationException(
+					$"SubjectCryptoScope for subject {subjectId} was disposed out of order — the ambient subject is {(_ambient.Value is { } current ? current.ToString() : "null")}, not {subjectId}. Scopes must be disposed in reverse order of creation (most-recently-created first).");
+
 			_ambient.Value = prior;
+			_disposed = true;
+		}
 	}
 }
