@@ -16,4 +16,11 @@ public sealed record Problem
 	/// reproducible from the request itself, so a trace handle adds no diagnostic value there.
 	/// </summary>
 	public Guid? CorrelationId { get; init; }
+
+	/// <summary>
+	/// The erasure proof, populated only when <see cref="Category"/> is
+	/// <see cref="ErrorCategory.Erased"/> and a ledger entry exists (crypto-shred producer);
+	/// <see langword="null"/> for tombstone producers and every other category.
+	/// </summary>
+	public ErasureReceipt? Receipt { get; init; }
 }

@@ -38,6 +38,25 @@ public sealed class OutcomeTests
 	}
 
 	[Fact]
+	void OutcomeOfT_Err_CarriesReceipt_WhenErased()
+	{
+		var receipt = new ErasureReceipt(Guid.Parse("22222222-2222-2222-2222-222222222222"), DateTimeOffset.UtcNow);
+		var outcome = Outcome<BoolResponse>.Err(ErrorCategory.Erased, receipt: receipt);
+
+		outcome.TryGetValue(out Failed failed).ShouldBeTrue();
+		failed.Problem.Receipt.ShouldBe(receipt);
+	}
+
+	[Fact]
+	void OutcomeOfT_Err_ReceiptDefaultsToNull_WhenOmitted()
+	{
+		var outcome = Outcome<BoolResponse>.Err(ErrorCategory.NotFound);
+
+		outcome.TryGetValue(out Failed failed).ShouldBeTrue();
+		failed.Problem.Receipt.ShouldBeNull();
+	}
+
+	[Fact]
 	void OutcomeOfT_Match_ExhaustiveOverBothCases()
 	{
 		var success = Outcome<BoolResponse>.Ok(new BoolResponse { Value = true });

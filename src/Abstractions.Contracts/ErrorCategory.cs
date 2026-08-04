@@ -35,5 +35,13 @@ public enum ErrorCategory : byte
 	/// domain state on the wire, but a data-integrity smell worth telemetry even when handled
 	/// (well-and-wire spec §3.2). Not a peer of <see cref="NotFound"/> in severity.
 	/// </summary>
-	MultipleMatches = 10
+	MultipleMatches = 10,
+	/// <summary>
+	/// Intentionally gone: the record existed, the content was deliberately retired — the system
+	/// working as designed, neither <see cref="NotFound"/> nor an incident. Producer-agnostic:
+	/// crypto-shredding (per-subject key destroyed; <see cref="Problem.Receipt"/> populated) and
+	/// content tombstoning (retired into temporal history; no receipt) both answer with this
+	/// category, and both fold to 410 Gone at the REST edge.
+	/// </summary>
+	Erased = 11
 }

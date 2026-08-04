@@ -92,8 +92,8 @@ public sealed class Outcome<T> : IUnion where T : notnull
 
 	/// <summary>Creates a failed outcome with the given error category and optional field errors.</summary>
 	[SuppressMessage("Design", "CA1000:Do not declare static members on generic types", Justification = "Outcome<T>.Ok/Err are the type's only construction path by design — an instance-side factory would need an already-constructed Outcome<T> to call it from.")]
-	public static Outcome<T> Err(ErrorCategory category, IReadOnlyDictionary<string, string[]>? errors = null, Guid? correlationId = null) =>
-		new(new Failed(new Problem { Category = category, Errors = errors ?? new Dictionary<string, string[]>(), CorrelationId = correlationId }));
+	public static Outcome<T> Err(ErrorCategory category, IReadOnlyDictionary<string, string[]>? errors = null, Guid? correlationId = null, ErasureReceipt? receipt = null) =>
+		new(new Failed(new Problem { Category = category, Errors = errors ?? new Dictionary<string, string[]>(), CorrelationId = correlationId, Receipt = receipt }));
 
 	/// <summary>Consumes the outcome by handling both cases.</summary>
 	/// <exception cref="ArgumentNullException"><paramref name="success"/> or <paramref name="failure"/> is null.</exception>
