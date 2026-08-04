@@ -29,6 +29,13 @@ public readonly record struct SubjectKeyResult
 		(_key, _receipt, _state) = (key, receipt, state);
 
 	/// <summary>The key exists and is unwrapped.</summary>
+	/// <remarks>
+	/// Takes ownership of <paramref name="key"/> — the caller constructing this result must not
+	/// mutate the array afterward. Implementations are expected to hand this a fresh, caller-owned
+	/// copy of the underlying key material, so a consumer reading the <c>Available</c> arm may zero
+	/// the returned buffer after use (e.g. via <see cref="System.Security.Cryptography.CryptographicOperations.ZeroMemory"/>)
+	/// without affecting the store's internal state.
+	/// </remarks>
 	/// <exception cref="ArgumentException"><paramref name="key"/> is empty.</exception>
 	public static SubjectKeyResult Available(byte[] key)
 	{

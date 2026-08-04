@@ -14,6 +14,10 @@ public interface ILookupKeyRing
 	IEnumerable<string> KeyIds { get; }
 
 	/// <summary>Resolves a key by id.</summary>
+	/// <remarks>
+	/// Implementations return a caller-owned copy — the caller may zero the returned buffer after use
+	/// without affecting the ring's internal state.
+	/// </remarks>
 	/// <exception cref="KeyNotFoundException">The id is not on the ring.</exception>
 	byte[] GetKey(string keyId);
 }

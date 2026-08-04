@@ -15,6 +15,11 @@ public interface ISubjectKeyStore
 	/// Returns the subject's DEK, minting one for a new subject. A destroyed subject never re-keys —
 	/// re-registration is a new subject id, so this throws rather than resurrect.
 	/// </summary>
+	/// <remarks>
+	/// Implementations return a caller-owned copy — the caller may zero the returned buffer after use
+	/// (e.g. via <see cref="System.Security.Cryptography.CryptographicOperations.ZeroMemory"/>) without
+	/// affecting the store's internal state.
+	/// </remarks>
 	/// <exception cref="KeyDestroyedException">The subject's key was deliberately destroyed.</exception>
 	ValueTask<byte[]> GetOrCreateAsync(Guid subjectId, CancellationToken cancellationToken = default);
 
