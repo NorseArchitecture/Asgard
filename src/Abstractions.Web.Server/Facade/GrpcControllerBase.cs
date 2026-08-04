@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Norse.Abstractions.Contracts;
 
@@ -21,8 +22,11 @@ namespace Norse.Abstractions.Web.Server.Facade;
 /// edge's own <c>Outcome&lt;T&gt;</c> fold, via <c>ProblemExtensions.ToRpcException</c>) and the two are
 /// required to agree state-for-state: every <see cref="ErrorCategory"/> below maps to the HTTP status the
 /// canonical gRPC-to-HTTP mapping (the well-known table grpc-gateway and Google's own APIs use — 200/400/
-/// 401/403/404/409/500 etc.) would assign to the gRPC <c>StatusCode</c> the interceptor selects for that
-/// same category. Verified category by category against <c>ProblemExtensions.cs</c>, not assumed.
+/// 401/403/404/409/410/500 etc.) would assign to the gRPC <c>StatusCode</c> the interceptor selects for
+/// that same category — including <see cref="ErrorCategory.Erased"/>, which folds to 410 Gone from the
+/// gRPC edge's <c>NotFound</c> (its <c>ErrorInfo.Reason</c> carries the authoritative "Erased"
+/// discriminator that distinguishes it from a plain <see cref="ErrorCategory.NotFound"/>). Verified
+/// category by category against <c>ProblemExtensions.cs</c>, not assumed.
 /// </summary>
 [ApiController]
 [Consumes("application/json", "application/xml")]
@@ -60,6 +64,7 @@ public abstract class GrpcControllerBase : ControllerBase
 			ErrorCategory.InvalidCredentials => StatusCodes.Status401Unauthorized,     // gRPC Unauthenticated
 			ErrorCategory.Fault => StatusCodes.Status500InternalServerError,           // gRPC Internal
 			ErrorCategory.MultipleMatches => StatusCodes.Status500InternalServerError, // gRPC Internal
+			ErrorCategory.Erased => StatusCodes.Status410Gone,                         // gRPC NotFound — ErrorInfo.Reason carries the authoritative "Erased"
 			_ => StatusCodes.Status500InternalServerError                             // gRPC Unknown — the Unspecified sentinel; never a real emitted category.
 		};
 
@@ -78,6 +83,13 @@ public abstract class GrpcControllerBase : ControllerBase
 		{
 			extensions ??= [];
 			extensions["correlationId"] = correlationId;
+		}
+
+		if (problem.Receipt is { } receipt)
+		{
+			extensions ??= [];
+			extensions["receipt"] = receipt.ReceiptId;
+			extensions["severedAt"] = receipt.SeveredAt.ToString("O", CultureInfo.InvariantCulture);
 		}
 
 		var result = Problem(statusCode: statusCode, title: problem.Category.ToString(), extensions: extensions);

@@ -160,6 +160,35 @@ public sealed class GrpcControllerBaseTests
 	}
 
 	[Fact]
+	async Task Erased_folds_to_410_gone_with_receipt_extensions()
+	{
+		var controller = CreateController();
+		ErasureReceipt receipt = new(Guid.NewGuid(), new DateTimeOffset(2026, 8, 3, 12, 0, 0, TimeSpan.Zero));
+		Outcome<string> outcome = new(new Failed(new Problem { Category = ErrorCategory.Erased, Receipt = receipt }));
+
+		var result = await controller.Fold(ValueTask.FromResult(outcome));
+
+		var objectResult = result.Result.ShouldBeOfType<ObjectResult>();
+		objectResult.StatusCode.ShouldBe(StatusCodes.Status410Gone);
+		var problem = objectResult.Value.ShouldBeOfType<ProblemDetails>();
+		problem.Extensions["receipt"].ShouldBe(receipt.ReceiptId);
+		problem.Extensions["severedAt"].ShouldBe("2026-08-03T12:00:00.0000000+00:00");
+	}
+
+	[Fact]
+	async Task Erased_without_a_receipt_still_folds_to_410_gone()
+	{
+		var controller = CreateController();
+		Outcome<string> outcome = new(new Failed(new Problem { Category = ErrorCategory.Erased }));
+
+		var result = await controller.Fold(ValueTask.FromResult(outcome));
+
+		var objectResult = result.Result.ShouldBeOfType<ObjectResult>();
+		objectResult.StatusCode.ShouldBe(StatusCodes.Status410Gone);
+		objectResult.Value.ShouldBeOfType<ProblemDetails>().Extensions.ShouldNotContainKey("receipt");
+	}
+
+	[Fact]
 	void The_class_carries_the_1_MiB_request_size_cap_per_spec_8_4()
 	{
 		var attribute = typeof(GrpcControllerBase)
