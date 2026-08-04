@@ -9,6 +9,13 @@ namespace Norse.Abstractions.Backend.Keys;
 public interface ISubjectKeyStore
 {
 	/// <summary>The three-state honest read: available, destroyed-with-receipt, or missing.</summary>
+	/// <remarks>
+	/// A transient failure to reach the underlying vault/store must be surfaced as a thrown
+	/// exception — never folded into <see cref="SubjectKeyResult.Missing"/> or
+	/// <see cref="SubjectKeyResult.Destroyed"/>. Mapping a timeout to <c>Destroyed</c> would tell a
+	/// live customer their data was erased and hand them a fabricated receipt; mapping it to
+	/// <c>Missing</c> at least produces a survivable, page-worthy <see cref="ErrorCategory.Fault"/>.
+	/// </remarks>
 	ValueTask<SubjectKeyResult> GetAsync(Guid subjectId, CancellationToken cancellationToken = default);
 
 	/// <summary>
@@ -24,8 +31,14 @@ public interface ISubjectKeyStore
 	ValueTask<byte[]> GetOrCreateAsync(Guid subjectId, CancellationToken cancellationToken = default);
 
 	/// <summary>
-	/// Destroys the subject's key and returns the receipt. Idempotent: a second destruction returns
-	/// the original receipt — the ledger records one severance.
+	/// Destroys the subject's key and returns the receipt. Idempotent: a second destruction against a
+	/// subject that has a key, or previously had one destroyed, returns the original receipt — the
+	/// ledger records one severance.
 	/// </summary>
+	/// <exception cref="KeyMissingException">
+	/// The subject never had a key in this store. Unknown-subject destruction is an incident, not a
+	/// fabricated no-op success — it never masquerades as erasure, per <see cref="KeyMissingException"/>'s
+	/// own doctrine.
+	/// </exception>
 	ValueTask<ErasureReceipt> DestroyAsync(Guid subjectId, CancellationToken cancellationToken = default);
 }
