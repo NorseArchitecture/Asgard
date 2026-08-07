@@ -2,6 +2,7 @@
 	<ItemGroup>
 		<PackageReference Include="FluentValidation" Version="12.*" />
 		<PackageReference Include="Microsoft.AspNetCore.Authorization" Version="11.*-*" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="11.*-*" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="*" PrivateAssets="all" />
 		<ProjectReference Include="../../gen/Abstractions.Web.Server.Generator/Abstractions.Web.Server.Generator.csproj" />
 		<ProjectReference Include="../../src/Abstractions.Contracts/Abstractions.Contracts.csproj" />
