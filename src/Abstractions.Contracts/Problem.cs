@@ -23,4 +23,18 @@ public sealed record Problem
 	/// <see langword="null"/> for tombstone producers and every other category.
 	/// </summary>
 	public ErasureReceipt? Receipt { get; init; }
+
+	/// <summary>
+	/// Creates a <see cref="Problem"/> carrying one model-level message — the empty-string key both
+	/// Blazor and FluentValidation reserve for errors not tied to any field — so call sites never
+	/// hand-build the single-entry dictionary literal.
+	/// </summary>
+	/// <param name="category">The error category the message belongs to.</param>
+	/// <param name="message">The model-level message.</param>
+	public static Problem ModelError(ErrorCategory category, string message) =>
+		new()
+		{
+			Category = category,
+			Errors = new Dictionary<string, string[]> { [string.Empty] = [message] },
+		};
 }
