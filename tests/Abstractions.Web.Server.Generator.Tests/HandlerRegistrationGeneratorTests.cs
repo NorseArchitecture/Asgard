@@ -1,8 +1,10 @@
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.DependencyInjection;
+using Norse.Abstractions.Web.Server.Mediator;
 
 namespace Norse.Abstractions.Web.Server.Generator.Tests;
 
@@ -35,8 +37,10 @@ public sealed class HandlerRegistrationGeneratorTests
 	{
 		var generated = Generate(Contract);
 		generated.ShouldContain("AddNorseIdentityWebServerHandlers");
-		generated.ShouldContain("AddScoped<global::Norse.Abstractions.Web.Server.Mediator.IRequestHandler<global::Norse.Identity.Web.Server.LoginRequest, global::Norse.Abstractions.Contracts.BoolResponse>, global::Norse.Identity.Web.Server.LoginHandler>");
-		generated.ShouldContain("AddSingleton<global::Norse.Abstractions.Web.Server.Mediator.ISenderDispatch, global::Norse.Abstractions.Web.Server.Mediator.SenderDispatch<global::Norse.Identity.Web.Server.LoginRequest, global::Norse.Abstractions.Contracts.BoolResponse>>");
+		generated.ShouldContain(
+			"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::Norse.Abstractions.Web.Server.Mediator.IRequestHandler<global::Norse.Identity.Web.Server.LoginRequest, global::Norse.Abstractions.Contracts.BoolResponse>), typeof(global::Norse.Identity.Web.Server.LoginHandler)));");
+		generated.ShouldContain(
+			"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(\n\t\t\t\ttypeof(global::Norse.Abstractions.Web.Server.Mediator.ISenderDispatch), typeof(global::Norse.Abstractions.Web.Server.Mediator.SenderDispatch<global::Norse.Identity.Web.Server.LoginRequest, global::Norse.Abstractions.Contracts.BoolResponse>)));");
 		generated.ShouldContain(
 			"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::FluentValidation.IValidator<global::Norse.Identity.Web.Server.LoginRequest>), typeof(global::Norse.Identity.Web.Server.LoginRequestValidator)));");
 	}
@@ -154,13 +158,21 @@ public sealed class HandlerRegistrationGeneratorTests
 	}
 
 	[Fact]
-	void Registering_twice_resolves_each_validator_exactly_once()
+	void Registering_twice_resolves_each_validator_handler_and_dispatch_entry_exactly_once()
 	{
 		// No pre-existing compile-and-invoke harness lived in this project (the rest of this file
 		// only ever inspects generated source as text) — CompileAndLoad below emits the generator's
 		// output to a real in-memory assembly exactly once, so LoginRequest/LoginRequestValidator are
 		// the same runtime Type across both invocations and TryAddEnumerable has something to dedupe
 		// against; two separate compilations would produce two distinct Types that could never collide.
+		//
+		// This test used to only resolve IValidator<LoginRequest> — proving the validator half of the
+		// idempotent-registration shape, but never exercising the handler/dispatch half, which is
+		// exactly the gap that let AddScoped/AddSingleton ship unconverted alongside the validator fix.
+		// It now also builds the dispatch map the way Midgard's SenderDispatchMap does
+		// (entries.ToFrozenDictionary(entry => entry.RequestType)) and asserts that doesn't throw —
+		// ToFrozenDictionary throws ArgumentException on a duplicate key, which is exactly what a
+		// second plain AddSingleton<ISenderDispatch, SenderDispatch<...>> would have produced.
 		var assembly = CompileAndLoad(Contract);
 		var registration = assembly.GetType("Norse.Identity.Web.Server.NorseHandlerRegistration")!.GetMethod("AddNorseIdentityWebServerHandlers")!;
 		void InvokeGeneratedRegistration(IServiceCollection services) =>
@@ -171,8 +183,74 @@ public sealed class HandlerRegistrationGeneratorTests
 		InvokeGeneratedRegistration(services);
 
 		using var provider = services.BuildServiceProvider();
-		var loginRequestValidatorType = typeof(FluentValidation.IValidator<>).MakeGenericType(assembly.GetType("Norse.Identity.Web.Server.LoginRequest")!);
+		var loginRequestType = assembly.GetType("Norse.Identity.Web.Server.LoginRequest")!;
+		var loginRequestValidatorType = typeof(FluentValidation.IValidator<>).MakeGenericType(loginRequestType);
 		provider.GetServices(loginRequestValidatorType).ShouldHaveSingleItem();
+
+		var handlerType = typeof(IRequestHandler<,>).MakeGenericType(loginRequestType, typeof(Norse.Abstractions.Contracts.BoolResponse));
+		provider.GetServices(handlerType).ShouldHaveSingleItem();
+
+		var dispatchEntries = provider.GetServices<ISenderDispatch>();
+		dispatchEntries.ShouldHaveSingleItem();
+		Should.NotThrow(() => dispatchEntries.ToFrozenDictionary(entry => entry.RequestType));
+	}
+
+	[Fact]
+	void Two_handlers_wrapping_the_same_wire_type_do_not_double_register_the_wire_validator()
+	{
+		// WireValidatorTypeNames is computed per-handler (WrapperContract-style Distinct() scoped to
+		// one h.Request at a time, not across handlers) — so two handlers in the SAME assembly, both
+		// wrapping the same wire DTO, each independently carry the wire type's validator in their own
+		// model and the emitter writes two TryAddEnumerable calls for the identical descriptor from a
+		// SINGLE generator run. This proves that in-run duplicate collapses to one provider entry too,
+		// not just the across-two-runs case the test above covers.
+		const string TwoHandlersSameWireType = """
+			using Microsoft.AspNetCore.Authorization;
+			using Norse.Abstractions.Contracts;
+			using Norse.Abstractions.Web.Server.Mediator;
+			using FluentValidation;
+			using System.Threading;
+			using System.Threading.Tasks;
+
+			namespace Norse.Identity.Web.Server;
+
+			public sealed record LoginWire;
+
+			[Authorize(Policy = "AuthN.Public")]
+			public sealed record LoginCommand(LoginWire Request) : CommandRequest<LoginWire, BoolResponse>(Request);
+
+			[Authorize(Policy = "AuthN.Public")]
+			public sealed record LoginAgainCommand(LoginWire Request) : CommandRequest<LoginWire, BoolResponse>(Request);
+
+			sealed class LoginCommandHandler : IRequestHandler<LoginCommand, BoolResponse>
+			{
+				public ValueTask<Outcome<BoolResponse>> Handle(LoginCommand request, CancellationToken cancellationToken = default) =>
+					ValueTask.FromResult(Outcome<BoolResponse>.Ok(new BoolResponse { Value = true }));
+			}
+
+			sealed class LoginAgainCommandHandler : IRequestHandler<LoginAgainCommand, BoolResponse>
+			{
+				public ValueTask<Outcome<BoolResponse>> Handle(LoginAgainCommand request, CancellationToken cancellationToken = default) =>
+					ValueTask.FromResult(Outcome<BoolResponse>.Ok(new BoolResponse { Value = true }));
+			}
+
+			public sealed class LoginWireValidator : AbstractValidator<LoginWire>;
+			""";
+
+		var assembly = CompileAndLoad(TwoHandlersSameWireType);
+		var registration = assembly.GetType("Norse.Identity.Web.Server.NorseHandlerRegistration")!.GetMethod("AddNorseIdentityWebServerHandlers")!;
+
+		ServiceCollection services = new();
+		registration.Invoke(null, [services]);
+
+		using var provider = services.BuildServiceProvider();
+		var loginWireType = assembly.GetType("Norse.Identity.Web.Server.LoginWire")!;
+		var loginWireValidatorType = typeof(FluentValidation.IValidator<>).MakeGenericType(loginWireType);
+		provider.GetServices(loginWireValidatorType).ShouldHaveSingleItem();
+
+		var dispatchEntries = provider.GetServices<ISenderDispatch>();
+		dispatchEntries.Count().ShouldBe(2); // one per distinct request type (LoginCommand, LoginAgainCommand), never collapsed
+		Should.NotThrow(() => dispatchEntries.ToFrozenDictionary(entry => entry.RequestType));
 	}
 
 	// Generate / GenerateDiagnostics: build CSharpCompilation (assembly name "Norse.Identity.Web.Server",

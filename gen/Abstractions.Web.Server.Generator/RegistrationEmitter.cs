@@ -36,8 +36,8 @@ static class RegistrationEmitter
 		{
 			var lines = new List<string>
 			{
-				$"\t\tglobal::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddScoped<global::Norse.Abstractions.Web.Server.Mediator.IRequestHandler<{h.RequestTypeName}, {h.ResponseTypeName}>, {h.HandlerTypeName}>(services);",
-				$"\t\tglobal::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Norse.Abstractions.Web.Server.Mediator.ISenderDispatch, global::Norse.Abstractions.Web.Server.Mediator.SenderDispatch<{h.RequestTypeName}, {h.ResponseTypeName}>>(services);",
+				$"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::Norse.Abstractions.Web.Server.Mediator.IRequestHandler<{h.RequestTypeName}, {h.ResponseTypeName}>), typeof({h.HandlerTypeName})));",
+				$"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(\n\t\t\t\ttypeof(global::Norse.Abstractions.Web.Server.Mediator.ISenderDispatch), typeof(global::Norse.Abstractions.Web.Server.Mediator.SenderDispatch<{h.RequestTypeName}, {h.ResponseTypeName}>)));",
 			};
 			lines.AddRange(h.ValidatorTypeNames.Select(v =>
 				$"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::FluentValidation.IValidator<{h.RequestTypeName}>), typeof({v})));"));
