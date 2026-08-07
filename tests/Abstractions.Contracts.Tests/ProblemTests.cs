@@ -22,4 +22,14 @@ public sealed class ProblemTests
 		Problem problem = new() { Category = ErrorCategory.NotFound };
 		problem.Receipt.ShouldBeNull();
 	}
+
+	[Fact]
+	void Model_error_carries_the_single_message_under_the_empty_key()
+	{
+		var problem = Problem.ModelError(ErrorCategory.InvalidCredentials, "Invalid email or password.");
+
+		problem.Category.ShouldBe(ErrorCategory.InvalidCredentials);
+		problem.Errors.ShouldHaveSingleItem();
+		problem.Errors[string.Empty].ShouldBe(["Invalid email or password."]);
+	}
 }

@@ -11,5 +11,6 @@ static class ReferenceAssemblies
 		MetadataReference.CreateFromFile(typeof(Task).Assembly.Location),
 		MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location),
 		MetadataReference.CreateFromFile(Assembly.Load("netstandard").Location),
+		MetadataReference.CreateFromFile(Assembly.Load("System.ComponentModel").Location),
 	];
 }

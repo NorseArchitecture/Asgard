@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Norse.Abstractions.Web.Server.Generator.Tests;
 
@@ -11,6 +13,8 @@ public sealed class HandlerRegistrationGeneratorTests
 		using Norse.Abstractions.Contracts;
 		using Norse.Abstractions.Web.Server.Mediator;
 		using FluentValidation;
+		using System.Threading;
+		using System.Threading.Tasks;
 
 		namespace Norse.Identity.Web.Server;
 
@@ -33,7 +37,8 @@ public sealed class HandlerRegistrationGeneratorTests
 		generated.ShouldContain("AddNorseIdentityWebServerHandlers");
 		generated.ShouldContain("AddScoped<global::Norse.Abstractions.Web.Server.Mediator.IRequestHandler<global::Norse.Identity.Web.Server.LoginRequest, global::Norse.Abstractions.Contracts.BoolResponse>, global::Norse.Identity.Web.Server.LoginHandler>");
 		generated.ShouldContain("AddSingleton<global::Norse.Abstractions.Web.Server.Mediator.ISenderDispatch, global::Norse.Abstractions.Web.Server.Mediator.SenderDispatch<global::Norse.Identity.Web.Server.LoginRequest, global::Norse.Abstractions.Contracts.BoolResponse>>");
-		generated.ShouldContain("AddScoped<global::FluentValidation.IValidator<global::Norse.Identity.Web.Server.LoginRequest>, global::Norse.Identity.Web.Server.LoginRequestValidator>");
+		generated.ShouldContain(
+			"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::FluentValidation.IValidator<global::Norse.Identity.Web.Server.LoginRequest>), typeof(global::Norse.Identity.Web.Server.LoginRequestValidator)));");
 	}
 
 	[Fact]
@@ -108,9 +113,7 @@ public sealed class HandlerRegistrationGeneratorTests
 	{
 		var generated = Generate(WrapperContract);
 		generated.ShouldContain(
-			"AddScoped<global::FluentValidation.IValidator<global::Norse.Identity.Web.Server.LoginCommand>, " +
-			"global::Norse.Abstractions.Web.Server.Mediator.CommandRequestValidator<global::Norse.Identity.Web.Server.LoginCommand, " +
-			"global::Norse.Identity.Web.Server.LoginWire, global::Norse.Abstractions.Contracts.BoolResponse>>");
+			"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::FluentValidation.IValidator<global::Norse.Identity.Web.Server.LoginCommand>), typeof(global::Norse.Abstractions.Web.Server.Mediator.CommandRequestValidator<global::Norse.Identity.Web.Server.LoginCommand, global::Norse.Identity.Web.Server.LoginWire, global::Norse.Abstractions.Contracts.BoolResponse>)));");
 	}
 
 	[Fact]
@@ -120,8 +123,7 @@ public sealed class HandlerRegistrationGeneratorTests
 		// registration the wire type's real validator (Heimdall's, in production) would never run.
 		var generated = Generate(WrapperContract);
 		generated.ShouldContain(
-			"AddScoped<global::FluentValidation.IValidator<global::Norse.Identity.Web.Server.LoginWire>, " +
-			"global::Norse.Identity.Web.Server.LoginWireValidator>");
+			"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::FluentValidation.IValidator<global::Norse.Identity.Web.Server.LoginWire>), typeof(global::Norse.Identity.Web.Server.LoginWireValidator)));");
 	}
 
 	[Fact]
@@ -151,6 +153,28 @@ public sealed class HandlerRegistrationGeneratorTests
 		diagnostics.ShouldContain(d => d.Id == "NORSE010" && d.Severity == DiagnosticSeverity.Error);
 	}
 
+	[Fact]
+	void Registering_twice_resolves_each_validator_exactly_once()
+	{
+		// No pre-existing compile-and-invoke harness lived in this project (the rest of this file
+		// only ever inspects generated source as text) — CompileAndLoad below emits the generator's
+		// output to a real in-memory assembly exactly once, so LoginRequest/LoginRequestValidator are
+		// the same runtime Type across both invocations and TryAddEnumerable has something to dedupe
+		// against; two separate compilations would produce two distinct Types that could never collide.
+		var assembly = CompileAndLoad(Contract);
+		var registration = assembly.GetType("Norse.Identity.Web.Server.NorseHandlerRegistration")!.GetMethod("AddNorseIdentityWebServerHandlers")!;
+		void InvokeGeneratedRegistration(IServiceCollection services) =>
+			registration.Invoke(null, [services]);
+
+		ServiceCollection services = new();
+		InvokeGeneratedRegistration(services);
+		InvokeGeneratedRegistration(services);
+
+		using var provider = services.BuildServiceProvider();
+		var loginRequestValidatorType = typeof(FluentValidation.IValidator<>).MakeGenericType(assembly.GetType("Norse.Identity.Web.Server.LoginRequest")!);
+		provider.GetServices(loginRequestValidatorType).ShouldHaveSingleItem();
+	}
+
 	// Generate / GenerateDiagnostics: build CSharpCompilation (assembly name "Norse.Identity.Web.Server",
 	// references: recovered ReferenceAssemblies + Norse.Abstractions.Contracts + Norse.Abstractions.Web.Server
 	// + FluentValidation + Microsoft.AspNetCore.Authorization), run HandlerRegistrationGenerator via
@@ -163,6 +187,38 @@ public sealed class HandlerRegistrationGeneratorTests
 		MetadataReference.CreateFromFile(typeof(Norse.Abstractions.Contracts.BoolResponse).Assembly.Location),
 		MetadataReference.CreateFromFile(typeof(Norse.Abstractions.Web.Server.Mediator.ISenderDispatch).Assembly.Location),
 	];
+
+	// CompileAndLoad: the emission-only tests above never call Emit (they only ToString() the
+	// generated syntax tree, no semantic binding required), so ReferenceAssemblies.Net110 +
+	// _extraReferences was always enough for them. This method is the only caller that performs a
+	// real Emit, and needs two more assemblies (ServiceCollection/IServiceCollection) on top of that
+	// same set — computed locally, not as a shared static field, so a reference-resolution failure
+	// here can only ever fail Registering_twice_resolves_each_validator_exactly_once, not the whole
+	// class's static initialization.
+	static Assembly CompileAndLoad(string source)
+	{
+		MetadataReference[] references =
+		[
+			.. ReferenceAssemblies.Net110,
+			.. _extraReferences,
+			MetadataReference.CreateFromFile(typeof(ServiceCollection).Assembly.Location),
+			MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location),
+		];
+
+		var compilation = CSharpCompilation.Create(
+			"Norse.Identity.Web.Server",
+			[CSharpSyntaxTree.ParseText(source)],
+			references,
+			new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+		_ = CSharpGeneratorDriver.Create([new HandlerRegistrationGenerator().AsSourceGenerator()])
+			.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out _);
+
+		using MemoryStream stream = new();
+		var emitResult = outputCompilation.Emit(stream);
+		emitResult.Success.ShouldBeTrue(string.Join('\n', emitResult.Diagnostics));
+		return Assembly.Load(stream.ToArray());
+	}
 
 	static (ImmutableArray<Diagnostic> Diagnostics, string[] GeneratedSources) Run(string source)
 	{

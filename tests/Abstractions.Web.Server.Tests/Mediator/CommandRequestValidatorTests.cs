@@ -79,6 +79,28 @@ public sealed class CommandRequestValidatorTests
 	}
 
 	[Fact]
+	async Task The_adapter_runs_async_rules_declared_on_the_wire_type()
+	{
+		// Direct proof the async rule actually ran (a side-effecting flag) rather than inferring it
+		// from a validation-result shape — the guarantee Task 10's default-set async rule rides on:
+		// "single source of validation truth, run twice" only holds because this adapter's plain
+		// ValidateAsync reaches every rule FluentValidation supports, sync or async, unchanged.
+		var called = false;
+		InlineValidator<LoginWire> wireValidator = [];
+		wireValidator.RuleFor(w => w.Email).CustomAsync(async (_, _, _) =>
+		{
+			called = true;
+			await Task.Yield();
+		});
+		CommandRequestValidator<LoginCommand, LoginWire, string> adapter = new([wireValidator]);
+		var command = new LoginCommand(new LoginWire("irrelevant@example.com", "irrelevant"));
+
+		await adapter.ValidateAsync(new ValidationContext<LoginCommand>(command), TestContext.Current.CancellationToken);
+
+		called.ShouldBeTrue();
+	}
+
+	[Fact]
 	void Sync_Validate_throws_NotSupportedException()
 	{
 		CommandRequestValidator<LoginCommand, LoginWire, string> validator = new([]);

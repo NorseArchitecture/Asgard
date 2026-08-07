@@ -40,14 +40,13 @@ static class RegistrationEmitter
 				$"\t\tglobal::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<global::Norse.Abstractions.Web.Server.Mediator.ISenderDispatch, global::Norse.Abstractions.Web.Server.Mediator.SenderDispatch<{h.RequestTypeName}, {h.ResponseTypeName}>>(services);",
 			};
 			lines.AddRange(h.ValidatorTypeNames.Select(v =>
-				$"\t\tglobal::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddScoped<global::FluentValidation.IValidator<{h.RequestTypeName}>, {v}>(services);"));
+				$"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::FluentValidation.IValidator<{h.RequestTypeName}>), typeof({v})));"));
 			if (h.WrapperWireTypeName is not null)
 			{
 				lines.AddRange(h.WireValidatorTypeNames.Select(v =>
-					$"\t\tglobal::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddScoped<global::FluentValidation.IValidator<{h.WrapperWireTypeName}>, {v}>(services);"));
+					$"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::FluentValidation.IValidator<{h.WrapperWireTypeName}>), typeof({v})));"));
 				lines.Add(
-					$"\t\tglobal::Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddScoped<global::FluentValidation.IValidator<{h.RequestTypeName}>, " +
-					$"global::Norse.Abstractions.Web.Server.Mediator.CommandRequestValidator<{h.RequestTypeName}, {h.WrapperWireTypeName}, {h.ResponseTypeName}>>(services);");
+					$"\t\tglobal::Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddEnumerable(\n\t\t\tservices, global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Scoped(\n\t\t\t\ttypeof(global::FluentValidation.IValidator<{h.RequestTypeName}>), typeof(global::Norse.Abstractions.Web.Server.Mediator.CommandRequestValidator<{h.RequestTypeName}, {h.WrapperWireTypeName}, {h.ResponseTypeName}>)));");
 			}
 			return string.Join("\n", lines);
 		}));
