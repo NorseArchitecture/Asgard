@@ -66,4 +66,29 @@ public sealed class SenderDispatchTests
 		await Should.ThrowAsync<InvalidOperationException>(async () =>
 			await dispatch.Dispatch(services, new Ping(), CancellationToken.None));
 	}
+
+	sealed class AnotherPingHandler : IRequestHandler<Ping, string>
+	{
+		public ValueTask<Outcome<string>> Handle(Ping request, CancellationToken cancellationToken = default) =>
+			ValueTask.FromResult(Outcome<string>.Ok("pong"));
+	}
+
+	[Fact]
+	async Task Fails_loudly_when_more_than_one_handler_is_registered_for_the_same_request_type()
+	{
+		// Registering ISenderDispatch itself is idempotent (TryAddEnumerable) precisely so a single
+		// realm's generated AddNorse*Handlers() call landing twice collapses safely — that idempotency
+		// means it can no longer catch a genuine cross-realm conflict (two DIFFERENT realms each
+		// declaring an IRequestHandler<Ping, string>) by counting dispatch-map entries. This is the
+		// check that replaces it: PingHandler and AnotherPingHandler standing in for two realms that
+		// both, mistakenly, claim the same request type.
+		var services = new ServiceCollection()
+			.AddScoped<IRequestHandler<Ping, string>, PingHandler>()
+			.AddScoped<IRequestHandler<Ping, string>, AnotherPingHandler>()
+			.BuildServiceProvider();
+
+		SenderDispatch<Ping, string> dispatch = new();
+		await Should.ThrowAsync<InvalidOperationException>(async () =>
+			await dispatch.Dispatch(services, new Ping(), CancellationToken.None));
+	}
 }
