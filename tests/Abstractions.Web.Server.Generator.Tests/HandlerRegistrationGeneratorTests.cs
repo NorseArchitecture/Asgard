@@ -13,6 +13,8 @@ public sealed class HandlerRegistrationGeneratorTests
 		using Norse.Abstractions.Contracts;
 		using Norse.Abstractions.Web.Server.Mediator;
 		using FluentValidation;
+		using System.Threading;
+		using System.Threading.Tasks;
 
 		namespace Norse.Identity.Web.Server;
 
@@ -186,41 +188,27 @@ public sealed class HandlerRegistrationGeneratorTests
 		MetadataReference.CreateFromFile(typeof(Norse.Abstractions.Web.Server.Mediator.ISenderDispatch).Assembly.Location),
 	];
 
-	// _loadReferences / CompileAndLoad: the emission-only tests above never need a complete reference
-	// set (they only ToString() the generated syntax tree — no semantic binding required, so
-	// ReferenceAssemblies.Net110's minimal set is enough). This pair exists solely for
-	// Registering_twice_resolves_each_validator_exactly_once, which calls Emit and therefore needs
-	// every BCL/ASP.NET assembly the Contract fixture and the generated code actually touch
-	// (CancellationToken, ValueTask, IServiceProvider, DI) — sourced from the running test host's own
-	// trusted platform assemblies rather than hand-curated, so it can't silently fall out of date.
-	static readonly MetadataReference[] _loadReferences =
-	[
-		.. ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
-			.Split(Path.PathSeparator)
-			.Select(path => MetadataReference.CreateFromFile(path)),
-		MetadataReference.CreateFromFile(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute).Assembly.Location),
-		MetadataReference.CreateFromFile(typeof(FluentValidation.IValidator<>).Assembly.Location),
-		MetadataReference.CreateFromFile(typeof(Norse.Abstractions.Contracts.BoolResponse).Assembly.Location),
-		MetadataReference.CreateFromFile(typeof(Norse.Abstractions.Web.Server.Mediator.ISenderDispatch).Assembly.Location),
-		MetadataReference.CreateFromFile(typeof(ServiceCollection).Assembly.Location),
-		MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location),
-	];
-
-	// Contract itself carries no "using System.Threading;"/"using System.Threading.Tasks;" — harmless
-	// under the emission-only tests above (they never call Emit, so CS0246 on CancellationToken/
-	// ValueTask never surfaces), but Emit performs full semantic binding, so this harness supplies
-	// the two global usings the MSBuild-driven build would normally inject via ImplicitUsings.
-	const string GlobalUsingsPrelude = """
-		global using System.Threading;
-		global using System.Threading.Tasks;
-		""";
-
+	// CompileAndLoad: the emission-only tests above never call Emit (they only ToString() the
+	// generated syntax tree, no semantic binding required), so ReferenceAssemblies.Net110 +
+	// _extraReferences was always enough for them. This method is the only caller that performs a
+	// real Emit, and needs two more assemblies (ServiceCollection/IServiceCollection) on top of that
+	// same set — computed locally, not as a shared static field, so a reference-resolution failure
+	// here can only ever fail Registering_twice_resolves_each_validator_exactly_once, not the whole
+	// class's static initialization.
 	static Assembly CompileAndLoad(string source)
 	{
+		MetadataReference[] references =
+		[
+			.. ReferenceAssemblies.Net110,
+			.. _extraReferences,
+			MetadataReference.CreateFromFile(typeof(ServiceCollection).Assembly.Location),
+			MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location),
+		];
+
 		var compilation = CSharpCompilation.Create(
 			"Norse.Identity.Web.Server",
-			[CSharpSyntaxTree.ParseText(source), CSharpSyntaxTree.ParseText(GlobalUsingsPrelude)],
-			_loadReferences,
+			[CSharpSyntaxTree.ParseText(source)],
+			references,
 			new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
 		_ = CSharpGeneratorDriver.Create([new HandlerRegistrationGenerator().AsSourceGenerator()])
