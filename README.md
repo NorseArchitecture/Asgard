@@ -8,26 +8,46 @@
 
 *Image credit: [@norsemythologyclips](https://www.instagram.com/norsemythologyclips/) — go follow them.*
 
-Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contracts and rules every realm must honor. No implementations live here, by design. Six assemblies, split by dependency wall and consumer context:
+Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contracts and rules every realm must honor. No implementations live here, by design. Seven assemblies plus a source generator, split by dependency wall and consumer context:
 
-| Assembly | Upstream Dependencies | Purpose |
+| Assembly | Upstream | Purpose |
 |---|---|---|
-| `Norse.Abstractions.Contracts` | none | `Outcome<T>` (+ `Problem`/`ErrorCategory`/`BoolResponse`/`Unit`) |
-| `Norse.Abstractions.Components` | none | Razor component base abstractions (MAUI/WASM-safe — no server-side infrastructure) |
-| `Norse.Abstractions.Backend` | `Norse.Primitives`, `Norse.Abstractions.Contracts` | Shared server-side contracts (serialization seam — `ISerializer`/`ISerializerProvider`/`NamingStrategy`; key seam under `.Keys` — `SubjectKeyResult`/`ISubjectKeyStore`/`ILookupKeyRing`/`SubjectCryptoScope`; egress contracts under `.Egress` namespace) |
-| `Norse.Abstractions.Worker` | `Norse.Abstractions.Backend` (transitive) | `IWorkerHostPlugin`, `ICommandRepository<T>`, `ICachedRepository<T>`, NServiceBus seams |
-| `Norse.Abstractions.Web.Server` | `Norse.Abstractions.Backend` (transitive) | `IWebHostPlugin`, `IDocumentRepository<T>`, mediator law (`IRequest`/`ICommandRequest`/`IQueryRequest` marker family, `ISender`, `IRequestHandler`, `IBehavior`, `IPrincipalAccessor`) |
-| `Norse.Abstractions.Migrations` | none | `IMigrationContributor` (EF-free) |
+| [`Norse.Abstractions.Contracts`](src/Abstractions.Contracts) | `Norse.Primitives` | [`Outcome<T>`](src/Abstractions.Contracts/Outcome%7BT%7D.cs) with [`Problem`](src/Abstractions.Contracts/Problem.cs)/[`ErrorCategory`](src/Abstractions.Contracts/ErrorCategory.cs)/[`BoolResponse`](src/Abstractions.Contracts/BoolResponse.cs)/[`Unit`](src/Abstractions.Contracts/Unit.cs), and [`ErasureReceipt`](src/Abstractions.Contracts/ErasureReceipt.cs) |
+| [`Norse.Abstractions.Components`](src/Abstractions.Components) | ASP.NET Core Components | Razor component base abstractions ([`AsyncComponentBase`](src/Abstractions.Components/AsyncComponentBase.cs), [`IAppShellLayout`](src/Abstractions.Components/Primitives/IAppShellLayout.cs), [`IDashboardWidget`](src/Abstractions.Components/Primitives/IDashboardWidget.cs)) — MAUI/WASM-safe, no server-side types |
+| [`Norse.Abstractions.Backend`](src/Abstractions.Backend) | `Norse.Primitives`, `.Contracts` | The read contract ([`IReadRepository<TView>`](src/Abstractions.Backend/IReadRepository%7BTView%7D.cs), [`IViewBearer<TView>`](src/Abstractions.Backend/IViewBearer%7BTView%7D.cs)), the [serialization seam](src/Abstractions.Backend/Serialization), and the [key custody seam](src/Abstractions.Backend/Keys) |
+| [`Norse.Abstractions.Web.Server`](src/Abstractions.Web.Server) | `.Backend`, `.Contracts`, FluentValidation | The [mediator law](src/Abstractions.Web.Server/Mediator) (`IRequest`/`ICommandRequest`/`IQueryRequest`, `ISender`, `IRequestHandler`, `IBehavior`, `CommandRequest`, `CommandRequestValidator`), the [gRPC facade](src/Abstractions.Web.Server/Facade), and [`IDeferredSignIn`](src/Abstractions.Web.Server/DeferredSignIn/IDeferredSignIn.cs) |
+| [`Norse.Abstractions.Worker`](src/Abstractions.Worker) | `.Backend` | Declared and deliberately empty — worker-side contracts land with their first consumer |
+| [`Norse.Abstractions.Migrations`](src/Abstractions.Migrations) | none | [`IMigrationContributor`](src/Abstractions.Migrations/IMigrationContributor.cs) and [`ISeedContributor`](src/Abstractions.Migrations/Seeding/ISeedContributor.cs) (EF-free) |
+| [`Norse.Abstractions.Emit`](src/Abstractions.Emit) | none | The generator-authoring toolkit ([`CSharpEmit`](src/Abstractions.Emit/CSharpEmit.cs), [`Utf8NoBom`](src/Abstractions.Emit/Utf8NoBom.cs)) — netstandard2.0 so source generators across the platform can consume it |
+| [`Abstractions.Web.Server.Generator`](gen/Abstractions.Web.Server.Generator) | `.Emit` | [`HandlerRegistrationGenerator`](gen/Abstractions.Web.Server.Generator/HandlerRegistrationGenerator.cs) — compile-time handler/dispatch/validator registration (`AddNorse{Realm}Handlers()`), bundled inside the `Norse.Abstractions.Web.Server` package |
 
-Worker and Web.Server are mutually invisible — neither references the other.
+`Worker` and `Web.Server` are mutually invisible — neither references the other.
 
-## Status
+## The law in force
 
-Scaffolded — six source projects and six test projects, wired into `Asgard.slnx`. **`Norse.Abstractions.Migrations` shipped first** — `IMigrationContributor` is live on NuGet, the seed contract behind the platform-wide migrations framework proven end to end across six realms (the full story is on [Bifröst's README](https://github.com/NorseArchitecture/Bifrost#readme)). **`Norse.Abstractions.Web.Server` also carries a live `IDeferredSignIn` contract** (Midgard implements it) and the mediator law surface (`IRequestHandler`, `ICommandRequest`, `IBehavior`). **`Norse.Abstractions.Contracts` shipped `Outcome<T>`** — the platform's second discriminated union, Asgard's counterpart to Svartálfheim's `Result<T>`. The code-generated gateway layer that previously lived here (`GatewayGenerator`, `[GenerateGateway]`, `Contract`/`InProcessHost`/`WireHost` emission) is retired in favor of a hand-rolled mediator pipeline — the marker family (`IRequest`/`ICommandRequest`/`IQueryRequest`) plus `IRequestHandler`/`ISender`/`ISenderDispatch`/`IBehavior`/`IPrincipalAccessor` all live in Web.Server, deliberately server-only, with the handler-registration generator (`gen/Abstractions.Web.Server.Generator`) live ([design](https://github.com/NorseArchitecture/Glitnir/blob/master/docs/Platform/specs/2026-07-27-mediator-pipeline-retires-gateway-design.md)). **`Norse.Abstractions.Backend` now carries the serialization seam** — `ISerializer`, `ISerializerProvider`, and `NamingStrategy` (format-agnostic; Midgard provides the STJ implementation). **It also now carries the key seam** — `Abstractions.Backend/Keys`: `SubjectKeyResult`, `ISubjectKeyStore`, `ILookupKeyRing`, `KeyDestroyedException`, `KeyMissingException`, and `SubjectCryptoScope`. Egress contracts (`Norse.Abstractions.Backend.Egress`) remain staged, not yet executed. Design for each subsequent type surface follows the spec-first discipline: brainstorm → spec → plan in [Glitnir](https://github.com/NorseArchitecture/Glitnir)'s `docs/Asgard/`, greenlit by the human, then code.
+- **[`Outcome<T>`](src/Abstractions.Contracts/Outcome%7BT%7D.cs)** — the platform's second discriminated union and the interior half of [the two unions](https://github.com/NorseArchitecture/Glitnir/blob/master/docs/the-two-unions.md): it faces operations inside the host and describes *an event* — "this operation ran; here is how it went" — where Svartálfheim's `Result<T>` faces the boundary and describes *data*. A hand-rolled `sealed class` union, `[MustConsume]`-decorated, deliberately starved API (`Ok`/`Err`/`Match` — no typed happy-path accessors, so the unhappy path cannot be politely glanced past). It is never serialized, stored, or compared; each transport edge translates it into its native tongue. Live today: Blazor components consume `Task<Outcome<T>>` from the gRPC service contracts and pattern-match the result.
+- **The mediator law is server-only, deliberately** — the marker family lives in `Web.Server` so wire records shipped to WASM stay pure `[DataContract]` shapes with zero mediator coupling. Realms give a wire DTO server-side identity by deriving `CommandRequest<TRequest,TResponse>`, and the same client-side FluentValidation class runs again on the server through `CommandRequestValidator`.
+- **The registration generator rides the contract package** — it discovers a realm's `IRequestHandler`/`IValidator` implementations at compile time and emits DI registration, replacing assembly scanning. It lives here (not in the infrastructure realm) because handler-bearing realms may legally depend only on declared law; duplicate handlers and requests without an `[Authorize]` policy are build errors (NORSE010/NORSE011).
+- **`IMigrationContributor`** — the thinnest contract in the platform, live on NuGet, and the seed behind the migrations framework proven end to end across six realms (the full story is on [Bifröst's README](https://github.com/NorseArchitecture/Bifrost#readme)). No `Order`, no `DependsOn`: sequencing between contributors would couple bounded contexts.
+
+Egress contracts (`Norse.Abstractions.Backend.Egress`) are staged, not yet executed. Every new surface follows the spec-first discipline: brainstorm → spec → plan in [Glitnir](https://github.com/NorseArchitecture/Glitnir)'s [docs/Asgard/](https://github.com/NorseArchitecture/Glitnir/tree/master/docs/Asgard), greenlit by the human, then code.
+
+## Build and test
+
+```shell
+dotnet build Asgard.slnx   # warnings are errors — a single warning fails
+dotnet test Asgard.slnx    # xUnit v3 + Shouldly on Microsoft.Testing.Platform
+```
+
+Requires the .NET 11 preview SDK pinned by `global.json`. The realm builds standalone — it is its own clone target, not only a Bifröst submodule.
+
+## The naming law
+
+Project folders and `.csproj` files are brand-free (`src/Abstractions.Contracts/Abstractions.Contracts.csproj`); the realm's root `Directory.Build.props` injects `AssemblyName` and `RootNamespace` as `Norse.$(MSBuildProjectName)`. Fork it, change `Norse` once, and every build output carries your brand — the `namespace Norse.*` declarations in code are yours to cull deliberately, with no filesystem change either way.
 
 ## The cosmos
 
-Asgard is one realm of the [Norse Architecture](https://github.com/NorseArchitecture). The whole platform composes at [Bifröst](https://github.com/NorseArchitecture/Bifrost) — clone once, cross the bridge, and every session starts there so decisions get brainstormed across the entire landscape, not in isolation. Every design is tried in [Glitnir](https://github.com/NorseArchitecture/Glitnir), the design court, before code is forged here; this realm's specs and plans will live in the court's [docs/Asgard/](https://github.com/NorseArchitecture/Glitnir/tree/master/docs/Asgard) once they converge.
+Asgard is one realm of the [Norse Architecture](https://github.com/NorseArchitecture). The whole platform composes at [Bifröst](https://github.com/NorseArchitecture/Bifrost) — clone once, cross the bridge. Every design is tried in [Glitnir](https://github.com/NorseArchitecture/Glitnir), the design court, before law is declared here; this realm's specs and plans live in the court's [docs/Asgard/](https://github.com/NorseArchitecture/Glitnir/tree/master/docs/Asgard).
 
 ## Soundtrack: Twilight of the Thunder God
 [![Soundtrack: Twilight of the Thunder God](https://img.youtube.com/vi/JFYVcz7h3o0/maxresdefault.jpg)](https://www.youtube.com/watch?v=JFYVcz7h3o0)

@@ -2,26 +2,63 @@
 
 ## 0. Wrong Root — Halt
 
-Session root must be **Bifröst**, not this repo directly — org-wide settings (`superpowers`, permission rules) only apply from the actual root, and Claude Code never merges a submodule's own `.claude/settings.json` into a parent-launched session. If `claude` was run from inside **Asgard**, stop: don't read further, don't propose changes, don't run anything — tell the user to `cd ../Bifrost` and start there. (This repo's `.claude/settings.json` carries a `SessionStart` hook meant to block this before you ever see this file; if you're reading this anyway, the hook was bypassed, disabled, or failed — halt regardless.)
+Session root must be **Bifröst**, never this repo. Org-wide settings (`superpowers`, permission rules) only apply from the actual root, and Claude Code never merges a submodule's own `.claude/settings.json` into a parent-launched session. If `claude` was launched inside Asgard: stop — don't read further, don't propose changes, don't run anything — tell the user to `cd ../Bifrost` and start there. (A `SessionStart` hook should block this before you ever see this file; if you're reading this anyway, halt regardless.)
 
-> **Do not commit, push, or rewrite git history** — stage (`git add`), show the diff, stop; the human reviews and commits. This applies even when a skill's flow includes a commit step. **US English spelling** everywhere — code, comments, docs, commits.
+> **Never commit, push, or rewrite git history** — stage (`git add`), show the diff, stop; the human commits. This holds even when a skill's flow includes a commit step. **US English spelling** everywhere — code, comments, docs, commits.
 
-## 1. What This Repository Is
+## What This Realm Is
 
-Asgard is **declared law** — `Norse.Abstractions`: contracts and the rules every realm must honor. No implementations live here, by design. Six assemblies, split by dependency wall and consumer context — see `../Glitnir/docs/Asgard/specs/2026-06-25-asgard-project-structure-design.md` for the full assembly set, dependency graph, and rationale.
+Declared law — `Norse.Abstractions`: contracts and the rules every realm must honor. **No implementations live here, by design.** Seven source assemblies plus one source generator, split by dependency wall and consumer context:
 
-The dependency graph is peer-flat except for one assembly: `Norse.Abstractions.Backend` depends on `Norse.Abstractions.Contracts` and `Norse.Primitives` (Svartálfheim — forged below the domain, per the platform convention). The five remaining assemblies carry no upstream dependencies. "Asgard rides on nothing" was the claim before specs converged; the settled design shows `Norse.Abstractions.Backend` is the exception.
+| Assembly | Depends on | Carries |
+|---|---|---|
+| `Abstractions.Contracts` | `Norse.Primitives` | `Outcome<T>` (`Success<T>`/`Failed(Problem)`) + `Problem`/`ErrorCategory`/`BoolResponse`/`Unit`, `ErasureReceipt` |
+| `Abstractions.Components` | ASP.NET Core Components (framework only) | `AsyncComponentBase`, `IAppShellLayout`, `IDashboardWidget` — MAUI/WASM-safe, no server types |
+| `Abstractions.Backend` | `Norse.Primitives`, `Abstractions.Contracts` | Read contract (`IReadRepository<TView>`, `IViewBearer<TView>`, `NotProjectedAttribute`); serialization seam (`Serialization/`); key seam (`Keys/`) |
+| `Abstractions.Web.Server` | `Abstractions.Backend`, `Abstractions.Contracts`, FluentValidation | Mediator law (`Mediator/`), gRPC facade (`Facade/`), `IDeferredSignIn` |
+| `Abstractions.Worker` | `Abstractions.Backend` | **Empty — declared, no contracts yet.** Types land with their first consumer; docs listing `IWorkerHostPlugin`/repo contracts here were aspirational and are retired |
+| `Abstractions.Migrations` | none | `IMigrationContributor`, `Seeding/ISeedContributor` |
+| `Abstractions.Emit` | none (netstandard2.0) | `CSharpEmit.AppendCSharp`, `Utf8NoBom` — the generator-authoring toolkit, consumed by generators platform-wide |
+| `gen/Abstractions.Web.Server.Generator` | Emit | `HandlerRegistrationGenerator` — ships **inside** the `Norse.Abstractions.Web.Server` package as a bundled analyzer |
 
-This repo is scaffolded — six source projects and six test projects wired into `Asgard.slnx`. **`Norse.Abstractions.Migrations` is live** — the first of the six assemblies to clear its ship gate: merged, tagged, and published to NuGet as Task 1 of the cross-realm migrations framework rollout (`../Glitnir/docs/Platform/plans/2026-06-28-migrations-framework-identity-schema.md`). `IMigrationContributor` is deliberately the thinnest contract in the platform — no `Order`, no `DependsOn` — because sequencing between migration contributors would mean coupling between bounded contexts, which platform law forbids outright.
+`Worker` and `Web.Server` are mutually invisible — neither references the other. Ten test projects under `tests/` (including `Abstractions.Mediator.Tests` for the pipeline law and one per generator); every test project contains at least one test, deliberately.
 
-**`Norse.Abstractions.Web.Server` also carries a second live contract, `IDeferredSignIn`** (`Abstractions.Web.Server/DeferredSignIn`) — declared here so Midgard's `Infrastructure.Web.Server` can implement it without Himinbjörg's identity layer taking a direct dependency on Midgard for what is fundamentally a hosting concern (`../Glitnir/docs/Heimdall/plans/2026-07-14-deferred-signin-fix.md`). The same assembly carries the mediator law surface (`IRequestHandler`, `ICommandRequest`).
+**Spec index** — under `../Glitnir/docs/` (execution plans sit beside specs under `plans/`):
 
-**`Norse.Abstractions.Contracts` carries the platform's second discriminated union, `Outcome<T>`** (`Outcome{T}.cs`) — a hand-rolled `sealed class` `[Union]` (`Success<T>`/`Failed(Problem)`), Asgard's counterpart to Svartálfheim's `Result<T>`; doctrine and the full polarity table: `../Glitnir/docs/the-two-unions.md`. The code-generated gateway layer (`GatewayGenerator`, `[GenerateGateway]`, `Contract`/`InProcessHost`/`WireHost` emission) that previously sat here is retired — replaced by a hand-rolled mediator pipeline, entirely in `Norse.Abstractions.Web.Server`: the marker family (`IRequest<T>`/`ICommandRequest<T>`/`IQueryRequest<T>`) moved there too (ruled 2026-07-27, wire-purity amendment) — deliberately server-only law, so a WASM-shipped assembly referencing only `Norse.Abstractions.Contracts` cannot even reference them, let alone implement them — alongside `IRequestHandler` (envelope-native, payload-typed), `ISender`, `ISenderDispatch`/`SenderDispatch<,>` (the fold), `IBehavior<,>`, `IPrincipalAccessor`, `CommandRequest<TRequest,TResponse>` (the wrapper a realm derives to give a pure wire DTO mediator identity without the wire type itself carrying a marker), and the handler-registration generator (`gen/Abstractions.Web.Server.Generator`, live). Full design: `../Glitnir/docs/Platform/specs/2026-07-27-mediator-pipeline-retires-gateway-design.md`.
+| Subject | Document |
+|---|---|
+| Assembly set, dependency graph, rationale | `Asgard/specs/2026-06-25-asgard-project-structure-design.md` |
+| Mediator pipeline (retires the gateway layer) | `Platform/specs/2026-07-27-mediator-pipeline-retires-gateway-design.md` |
+| Generator toolkit + raw-string house style | `Asgard/specs/2026-07-25-generator-authoring-toolkit-and-raw-string-house-style-design.md` |
+| Read contract / well-and-wire ruling | `Platform/specs/2026-07-30-well-and-wire-reference-data-slice-design.md` |
+| Serialization seam | `Platform/specs/2026-08-03-serialization-seam-design.md` |
+| Key seam + `ErasureReceipt` (PII) | `Platform/specs/2026-08-03-pii-primitives-identity-erasure-seam-design.md` |
+| Migrations framework rollout | `Platform/plans/2026-06-28-migrations-framework-identity-schema.md` |
+| `IDeferredSignIn` placement | `Heimdall/plans/2026-07-14-deferred-signin-fix.md` |
+| Egress contracts (staged, not executed) | `Asgard/plans/2026-06-19-asgard-egress-contracts.md` |
+| The two unions | `the-two-unions.md` |
 
-**`Norse.Abstractions.Backend` also carries the serialization seam** — `ISerializer`, `ISerializerProvider`, and `NamingStrategy` (format-agnostic contract; STJ implementation lives in Midgard, per `../Glitnir/docs/Platform/specs/2026-08-03-serialization-seam-design.md`).
+## Build & Test
 
-**`Norse.Abstractions.Backend` also carries the key seam** — `Abstractions.Backend/Keys`: `SubjectKeyResult` (a seam-local closed three-state union, deliberately neither `Result<T>` nor `Outcome<T>`), `ISubjectKeyStore`, `ILookupKeyRing`, `KeyDestroyedException`, `KeyMissingException`, and the `AsyncLocal`-backed `SubjectCryptoScope` ambient write-subject, per the 2026-08-03 PII primitives / identity erasure seam plan.
+- `dotnet build Asgard.slnx` — warnings are errors; a single warning fails.
+- `dotnet test Asgard.slnx` — xUnit v3 + Shouldly on Microsoft.Testing.Platform. **VSTest `--filter` does NOT work** — use `dotnet test tests/Abstractions.Contracts.Tests -- --filter-class "*.OutcomeTests"`.
+- **NEVER `dotnet test` a test project containing zero tests** — xUnit v3 fails the run (every current test project has tests; keep it that way when adding projects).
+- SDK pinned by `global.json`: `11.0.100-` prerelease, rollForward latestFeature.
 
-The egress contracts slice (plan: `../Glitnir/docs/Asgard/plans/2026-06-19-asgard-egress-contracts.md`, Tasks 2–6 with the amendment applied — egress types land in `Norse.Abstractions.Backend.Egress`) remains staged, not executed — the mediator-pipeline work above landed first and is the most recently shipped slice. Every subsequent plan for this realm follows the same discipline: brainstorm → spec → plan in `../Glitnir/docs/Asgard/`, greenlit by the human, then code. Each plan's REQUIRED SUB-SKILL line names `superpowers:subagent-driven-development` as the default (not a recommendation among equals — `executing-plans` is the narrow fallback for separate-session review checkpoints) paired with `superpowers:test-driven-development` — implementation here is subagent-orchestrated and test-driven, never one without the other (`../Glitnir/CLAUDE.md` §2.8).
+## Architecture Facts (decided — do not re-litigate)
 
-See `../Bifrost/CLAUDE.md` (§2 The Naming Model) and `../Glitnir/CLAUDE.md` (§3 Bounded Context Map) for the full realm table and how Asgard fits the rest of the cosmos.
+- **`Outcome<T>` is the platform's second discriminated union** — a hand-rolled `sealed class` `[Union]` provider pattern (the C# 15 `union` keyword compiles exclusively to a record struct, which cannot cross gRPC client machinery and carries wrong equality for an event), `[MustConsume]`-decorated, API deliberately starved (`Ok`/`Err`/`Match` + blessed escapes; no typed happy-path accessors). Never serialized, never stored, never compared — translation happens at the transport edge (`OutcomeServerInterceptor` in Midgard for gRPC). Opposite polarity to Svartálfheim's `Result<T>`; full doctrine: `the-two-unions.md` (index above). Live today: components consume `Task<Outcome<T>>` from the gRPC service contracts and pattern-match the result.
+- **The mediator marker family is server-only law, deliberately** — `IRequest<T>`/`ICommandRequest<T>`/`IQueryRequest<T>` live in `Abstractions.Web.Server` (ruled 2026-07-27, wire-purity amendment) so a WASM-shipped assembly referencing only `Abstractions.Contracts` cannot even name them. Wire `[DataContract]` records stay pure; `CommandRequest<TRequest,TResponse>` is the wrapper a realm derives to give a wire DTO mediator identity server-side, and `CommandRequestValidator<TCommand,TRequest,TResponse>` reruns the client-side FluentValidation class against the wrapped request on the server.
+- **The handler-registration generator lives here because the Law of the Realms leaves it nowhere else** — it keys on this assembly's own `IRequestHandler<,>`/`IValidator<>` and ships inside the `Norse.Abstractions.Web.Server` package, so every handler-bearing realm (Himinbjörg's `Identity.Web.Server`, Mímir's `Reference.Web.Server`, every future context) gets `AddNorse{Realm}Handlers()` from the one dependency it is legally allowed to take — a Midgard home would make every leaf a NORSE071 conviction. Emits handler + dispatch-map + validator registrations; strikes: NORSE010 (duplicate handler for a request), NORSE011 (request missing `[Authorize(Policy = ...)]` — `AuthNPolicies.Public` included, no unmarked requests).
+- **Generator emitters never call `AppendLine` directly** — always `sb.AppendCSharp(...)` (`Abstractions.Emit`, `[StringSyntax("C#")]`), collapsing sequential appends into one raw string literal so generated shape reads as a block. `Abstractions.Emit` is netstandard2.0 precisely so generators can consume it.
+- **`IMigrationContributor` is deliberately the thinnest contract in the platform** — no `Order`, no `DependsOn`: sequencing between migration contributors would be coupling between bounded contexts, which platform law forbids outright.
+- **`IReadRepository<TView>` is the read contract, implemented exactly once** — by Midgard's generic repository over `IViewBearer<TView>` entities (2026-07-30 ruling, superseding the former four-contract family — `IDocumentRepository<T>`/`ICommandRepository<T>`/`ICachedRepository<T>` are gone, not pending). The write-side contract lands at the same address when designed.
+- **`SubjectKeyResult` is deliberately neither `Result<T>` nor `Outcome<T>`** — a seam-local closed three-state union for the key custody seam (`Keys/`: `ISubjectKeyStore`, `ILookupKeyRing`, `SubjectCryptoScope` ambient write-subject, `KeyDestroyedException`/`KeyMissingException`). Do not propose unifying it with either platform union.
+- **`IDeferredSignIn` is declared here so Midgard can implement it** without Himinbjörg taking a Midgard dependency for a hosting concern.
+- **The gateway layer is deleted, not dormant** — `GatewayGenerator`, `[GenerateGateway]`, and all emission modes are gone (2026-07-27); the empty `gen/Abstractions.Contracts.Generator` folders on disk are untracked residue, not a project.
+
+## Process
+
+Egress contracts (`Abstractions.Backend.Egress`) are staged, not executed — plan in the index above. Every new surface is spec-first: brainstorm → spec → plan in `../Glitnir/docs/Asgard/`, human greenlight at each transition. Implementation is subagent-orchestrated and test-driven, always: every plan's REQUIRED SUB-SKILL line names `superpowers:subagent-driven-development` (the default; `superpowers:executing-plans` is the narrow separate-session fallback) paired with `superpowers:test-driven-development`. Full rule: `../Glitnir/CLAUDE.md` §2.8.
+
+See `../Bifrost/CLAUDE.md` (§2 The Naming Model) and `../Glitnir/CLAUDE.md` (§3 Bounded Context Map) for the full realm table and how Asgard fits the cosmos.
