@@ -8,10 +8,10 @@ namespace Norse.Abstractions.Web.Server.Generator;
 #pragma warning disable RS2008 // No analyzer-release ledger, matching the platform's other generators.
 
 /// <summary>
-/// Discovers a realm's <c>IRequestHandler&lt;,&gt;</c> and <c>IValidator&lt;&gt;</c>
-/// implementations at compile time and emits <c>AddNorse{Realm}Handlers()</c> — handler,
-/// dispatch-map, and validator registrations, replacing assembly scanning with compile-time
-/// wiring (spec §2.7).
+///     Discovers a realm's <c>IRequestHandler&lt;,&gt;</c> and <c>IValidator&lt;&gt;</c>
+///     implementations at compile time and emits <c>AddNorse{Realm}Handlers()</c> — handler,
+///     dispatch-map, and validator registrations, replacing assembly scanning with compile-time
+///     wiring (spec §2.7).
 /// </summary>
 [Generator(LanguageNames.CSharp)]
 public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
@@ -23,7 +23,8 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 
 	static readonly DiagnosticDescriptor _missingAuthorizePolicy = new(
 		"NORSE011", "Request missing authorization policy",
-		"Request type '{0}' carries no [Authorize(Policy = ...)] — every request names its policy, AuthNPolicies.Public included", "Norse.Mediator",
+		"Request type '{0}' carries no [Authorize(Policy = ...)] — every request names its policy, AuthNPolicies.Public included",
+		"Norse.Mediator",
 		DiagnosticSeverity.Error, isEnabledByDefault: true);
 
 	/// <inheritdoc />
@@ -36,7 +37,9 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 				productionContext.ReportDiagnostic(diagnostic);
 			if (result.Handlers.Length > 0 && !result.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
 				productionContext.AddSource("NorseHandlerRegistration.g.cs",
-					SourceText.From(RegistrationEmitter.Emit(result.AssemblyName, result.RootNamespace, result.Handlers), Utf8NoBom.Encoding));
+					SourceText.From(
+						RegistrationEmitter.Emit(result.AssemblyName, result.RootNamespace, result.Handlers),
+						Utf8NoBom.Encoding));
 		});
 	}
 
@@ -44,10 +47,13 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 	{
 		cancellationToken.ThrowIfCancellationRequested();
 
-		var handlerInterface = compilation.GetTypeByMetadataName("Norse.Abstractions.Web.Server.Mediator.IRequestHandler`2");
+		var handlerInterface =
+			compilation.GetTypeByMetadataName("Norse.Abstractions.Web.Server.Mediator.IRequestHandler`2");
 		var validatorInterface = compilation.GetTypeByMetadataName("FluentValidation.IValidator`1");
-		var authorizeAttribute = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Authorization.AuthorizeAttribute");
-		var commandRequestBase = compilation.GetTypeByMetadataName("Norse.Abstractions.Web.Server.Mediator.CommandRequest`2");
+		var authorizeAttribute =
+			compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Authorization.AuthorizeAttribute");
+		var commandRequestBase =
+			compilation.GetTypeByMetadataName("Norse.Abstractions.Web.Server.Mediator.CommandRequest`2");
 		if (handlerInterface is null)
 			return DiscoveryResult.Empty(compilation);
 
@@ -62,13 +68,14 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 
 		var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
 
-		foreach (var duplicate in handlers.GroupBy(h => h.Request, SymbolEqualityComparer.Default).Where(g => g.Count() > 1))
+		foreach (var duplicate in handlers.GroupBy(h => h.Request, SymbolEqualityComparer.Default)
+			.Where(g => g.Count() > 1))
 			diagnostics.Add(Diagnostic.Create(_duplicateHandler, Location.None, duplicate.Key!.ToDisplayString()));
 
 		foreach (var (_, request, _) in handlers)
 			if (authorizeAttribute is not null && !request.GetAttributes().Any(a =>
-					SymbolEqualityComparer.Default.Equals(a.AttributeClass, authorizeAttribute) &&
-					a.NamedArguments.Any(n => n.Key == "Policy" && n.Value.Value is string { Length: > 0 })))
+				SymbolEqualityComparer.Default.Equals(a.AttributeClass, authorizeAttribute) &&
+				a.NamedArguments.Any(n => n.Key == "Policy" && n.Value.Value is string { Length: > 0 })))
 				diagnostics.Add(Diagnostic.Create(_missingAuthorizePolicy, Location.None, request.ToDisplayString()));
 
 		// Validators: compiled-symbol walk across own + referenced assemblies (PackageReference-mode
@@ -76,12 +83,14 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 		IAssemblySymbol[] assemblies = [compilation.Assembly, .. compilation.SourceModule.ReferencedAssemblySymbols];
 		ImmutableArray<(INamedTypeSymbol Validator, ITypeSymbol Request)> validators = validatorInterface is null ?
 			[] :
-			[.. assemblies
-				.SelectMany(a => AllTypes(a.GlobalNamespace))
-				.Where(t => t is { IsAbstract: false, TypeKind: TypeKind.Class })
-				.SelectMany(t => t.AllInterfaces
-					.Where(i => SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, validatorInterface))
-					.Select(i => (Validator: t, Request: i.TypeArguments[0])))];
+			[
+				.. assemblies
+					.SelectMany(a => AllTypes(a.GlobalNamespace))
+					.Where(t => t is { IsAbstract: false, TypeKind: TypeKind.Class })
+					.SelectMany(t => t.AllInterfaces
+						.Where(i => SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, validatorInterface))
+						.Select(i => (Validator: t, Request: i.TypeArguments[0])))
+			];
 
 		var format = SymbolDisplayFormat.FullyQualifiedFormat; // const is illegal on a reference type — local it is
 		var models = handlers
@@ -92,29 +101,35 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 					h.Handler.ToDisplayString(format),
 					h.Request.ToDisplayString(format),
 					h.Response.ToDisplayString(format),
-					[.. validators
-						.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, h.Request))
-						.Select(v => v.Validator.ToDisplayString(format))
-						.Distinct()
-						.OrderBy(v => v, StringComparer.Ordinal)],
+					[
+						.. validators
+							.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, h.Request))
+							.Select(v => v.Validator.ToDisplayString(format))
+							.Distinct()
+							.OrderBy(v => v, StringComparer.Ordinal)
+					],
 					wireType?.ToDisplayString(format),
 					wireType is null ?
 						[] :
-						[.. validators
-							.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, wireType))
-							.Select(v => v.Validator.ToDisplayString(format))
-							.Distinct()
-							.OrderBy(v => v, StringComparer.Ordinal)]);
+						[
+							.. validators
+								.Where(v => SymbolEqualityComparer.Default.Equals(v.Request, wireType))
+								.Select(v => v.Validator.ToDisplayString(format))
+								.Distinct()
+								.OrderBy(v => v, StringComparer.Ordinal)
+						]);
 			})
 			.OrderBy(m => m.RequestTypeName, StringComparer.Ordinal)
 			.ToImmutableArray();
 
-		return new(compilation.AssemblyName ?? "Unknown", RootNamespace(compilation), models, diagnostics.ToImmutable());
+		return new DiscoveryResult(compilation.AssemblyName ?? "Unknown", RootNamespace(compilation), models,
+			diagnostics.ToImmutable());
 	}
 
 	static IEnumerable<INamedTypeSymbol> AllTypes(INamespaceSymbol root)
 	{
 		foreach (var member in root.GetMembers())
+		{
 			switch (member)
 			{
 				case INamespaceSymbol ns:
@@ -125,16 +140,17 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 					yield return type;
 					break;
 			}
+		}
 	}
 
 	static string RootNamespace(Compilation compilation) =>
 		compilation.AssemblyName ?? "Norse.Generated";
 
 	/// <summary>
-	/// Walks <paramref name="request"/>'s base-type chain looking for a closed
-	/// <c>CommandRequest&lt;TRequest,TResponse&gt;</c> — matched by symbol against the open generic
-	/// definition, never by name — and returns its wrapped wire type symbol. Null when
-	/// <paramref name="request"/> is not a wrapper (the ordinary, non-wrapped-request case).
+	///     Walks <paramref name="request" />'s base-type chain looking for a closed
+	///     <c>CommandRequest&lt;TRequest,TResponse&gt;</c> — matched by symbol against the open generic
+	///     definition, never by name — and returns its wrapped wire type symbol. Null when
+	///     <paramref name="request" /> is not a wrapper (the ordinary, non-wrapped-request case).
 	/// </summary>
 	static ITypeSymbol? WrapperWireType(ITypeSymbol request, INamedTypeSymbol? commandRequestBase)
 	{
@@ -142,13 +158,19 @@ public sealed class HandlerRegistrationGenerator : IIncrementalGenerator
 			return null;
 
 		for (var current = request.BaseType; current is not null; current = current.BaseType)
+		{
 			if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, commandRequestBase))
 				return current.TypeArguments[0];
+		}
 
 		return null;
 	}
 
-	sealed record DiscoveryResult(string AssemblyName, string RootNamespace, ImmutableArray<HandlerModel> Handlers, ImmutableArray<Diagnostic> Diagnostics)
+	sealed record DiscoveryResult(
+		string AssemblyName,
+		string RootNamespace,
+		ImmutableArray<HandlerModel> Handlers,
+		ImmutableArray<Diagnostic> Diagnostics)
 	{
 		public static DiscoveryResult Empty(Compilation compilation) =>
 			new(compilation.AssemblyName ?? "Unknown", compilation.AssemblyName ?? "Norse.Generated", [], []);

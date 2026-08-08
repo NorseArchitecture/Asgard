@@ -22,10 +22,8 @@ public sealed class SubjectKeyResultTests
 	}
 
 	[Fact]
-	void Match_routes_the_missing_case()
-	{
+	void Match_routes_the_missing_case() =>
 		SubjectKeyResult.Missing.Match(_ => "available", _ => "destroyed", () => "missing").ShouldBe("missing");
-	}
 
 	[Fact]
 	void Match_throws_on_the_malformed_default()
@@ -35,8 +33,6 @@ public sealed class SubjectKeyResultTests
 	}
 
 	[Fact]
-	void Available_rejects_an_empty_key()
-	{
+	void Available_rejects_an_empty_key() =>
 		Should.Throw<ArgumentException>(() => SubjectKeyResult.Available([]));
-	}
 }

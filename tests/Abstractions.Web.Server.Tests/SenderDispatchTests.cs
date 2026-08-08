@@ -7,25 +7,6 @@ namespace Norse.Abstractions.Web.Server.Tests;
 
 public sealed class SenderDispatchTests
 {
-	sealed record Ping : IQueryRequest<string>;
-
-	sealed class PingHandler : IRequestHandler<Ping, string>
-	{
-		public ValueTask<Outcome<string>> Handle(Ping request, CancellationToken cancellationToken = default) =>
-			ValueTask.FromResult(Outcome<string>.Ok("pong"));
-	}
-
-	sealed class TaggingBehavior(string tag, List<string> log) : IBehavior<Ping, string>
-	{
-		public async ValueTask<Outcome<string>> Handle(Ping request, BehaviorDelegate<string> next, CancellationToken cancellationToken = default)
-		{
-			log.Add($"{tag}:in");
-			var outcome = await next();
-			log.Add($"{tag}:out");
-			return outcome;
-		}
-	}
-
 	[Fact]
 	async Task Folds_behaviors_first_registered_outermost_around_the_handler()
 	{
@@ -67,12 +48,6 @@ public sealed class SenderDispatchTests
 			await dispatch.Dispatch(services, new Ping(), CancellationToken.None));
 	}
 
-	sealed class AnotherPingHandler : IRequestHandler<Ping, string>
-	{
-		public ValueTask<Outcome<string>> Handle(Ping request, CancellationToken cancellationToken = default) =>
-			ValueTask.FromResult(Outcome<string>.Ok("pong"));
-	}
-
 	[Fact]
 	async Task Fails_loudly_when_more_than_one_handler_is_registered_for_the_same_request_type()
 	{
@@ -90,5 +65,31 @@ public sealed class SenderDispatchTests
 		SenderDispatch<Ping, string> dispatch = new();
 		await Should.ThrowAsync<InvalidOperationException>(async () =>
 			await dispatch.Dispatch(services, new Ping(), CancellationToken.None));
+	}
+
+	sealed record Ping : IQueryRequest<string>;
+
+	sealed class PingHandler : IRequestHandler<Ping, string>
+	{
+		public ValueTask<Outcome<string>> Handle(Ping request, CancellationToken cancellationToken = default) =>
+			ValueTask.FromResult(Outcome<string>.Ok("pong"));
+	}
+
+	sealed class TaggingBehavior(string tag, List<string> log) : IBehavior<Ping, string>
+	{
+		public async ValueTask<Outcome<string>> Handle(Ping request, BehaviorDelegate<string> next,
+			CancellationToken cancellationToken = default)
+		{
+			log.Add($"{tag}:in");
+			var outcome = await next();
+			log.Add($"{tag}:out");
+			return outcome;
+		}
+	}
+
+	sealed class AnotherPingHandler : IRequestHandler<Ping, string>
+	{
+		public ValueTask<Outcome<string>> Handle(Ping request, CancellationToken cancellationToken = default) =>
+			ValueTask.FromResult(Outcome<string>.Ok("pong"));
 	}
 }

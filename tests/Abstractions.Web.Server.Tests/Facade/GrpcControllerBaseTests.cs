@@ -8,23 +8,17 @@ using Norse.Abstractions.Web.Server.Facade;
 namespace Norse.Abstractions.Web.Server.Tests.Facade;
 
 /// <summary>
-/// Proves <see cref="GrpcControllerBase.FoldAsync{TResponse}"/> agrees state-for-state with Midgard's
-/// <c>OutcomeServerInterceptor</c>/<c>ProblemExtensions.ToRpcException</c> (the gRPC edge's own
-/// <see cref="Outcome{T}"/> fold): every <see cref="ErrorCategory"/> here maps to the HTTP status the
-/// canonical gRPC-to-HTTP mapping (grpc-gateway/Google APIs) would assign to the gRPC
-/// gRPC <c>StatusCode</c> the interceptor selects for that same category — verified per
-/// category, not assumed. Also proves the <c>errors</c> extension renders the flattened
-/// <c>[{path, detail}]</c> array (spec §11.1), never a dictionary, and that the 1 MiB request size cap
-/// (spec §8.4) travels with the facade itself.
+///     Proves <see cref="GrpcControllerBase.FoldAsync{TResponse}" /> agrees state-for-state with Midgard's
+///     <c>OutcomeServerInterceptor</c>/<c>ProblemExtensions.ToRpcException</c> (the gRPC edge's own
+///     <see cref="Outcome{T}" /> fold): every <see cref="ErrorCategory" /> here maps to the HTTP status the
+///     canonical gRPC-to-HTTP mapping (grpc-gateway/Google APIs) would assign to the gRPC
+///     gRPC <c>StatusCode</c> the interceptor selects for that same category — verified per
+///     category, not assumed. Also proves the <c>errors</c> extension renders the flattened
+///     <c>[{path, detail}]</c> array (spec §11.1), never a dictionary, and that the 1 MiB request size cap
+///     (spec §8.4) travels with the facade itself.
 /// </summary>
 public sealed class GrpcControllerBaseTests
 {
-	sealed class TestController : GrpcControllerBase
-	{
-		public Task<ActionResult<TResponse>> Fold<TResponse>(ValueTask<Outcome<TResponse>> operation) where TResponse : notnull =>
-			FoldAsync(operation);
-	}
-
 	static TestController CreateController()
 	{
 		var factory = Substitute.For<ProblemDetailsFactory>();
@@ -74,16 +68,17 @@ public sealed class GrpcControllerBaseTests
 	}
 
 	[Theory]
-	[InlineData(ErrorCategory.Validation, StatusCodes.Status400BadRequest)]         // gRPC InvalidArgument
-	[InlineData(ErrorCategory.Conflict, StatusCodes.Status409Conflict)]             // gRPC AlreadyExists
-	[InlineData(ErrorCategory.Unauthorized, StatusCodes.Status401Unauthorized)]     // gRPC Unauthenticated
-	[InlineData(ErrorCategory.Forbidden, StatusCodes.Status403Forbidden)]           // gRPC PermissionDenied
-	[InlineData(ErrorCategory.LockedOut, StatusCodes.Status403Forbidden)]           // gRPC PermissionDenied
-	[InlineData(ErrorCategory.NotAllowed, StatusCodes.Status400BadRequest)]         // gRPC FailedPrecondition
+	[InlineData(ErrorCategory.Validation, StatusCodes.Status400BadRequest)] // gRPC InvalidArgument
+	[InlineData(ErrorCategory.Conflict, StatusCodes.Status409Conflict)] // gRPC AlreadyExists
+	[InlineData(ErrorCategory.Unauthorized, StatusCodes.Status401Unauthorized)] // gRPC Unauthenticated
+	[InlineData(ErrorCategory.Forbidden, StatusCodes.Status403Forbidden)] // gRPC PermissionDenied
+	[InlineData(ErrorCategory.LockedOut, StatusCodes.Status403Forbidden)] // gRPC PermissionDenied
+	[InlineData(ErrorCategory.NotAllowed, StatusCodes.Status400BadRequest)] // gRPC FailedPrecondition
 	[InlineData(ErrorCategory.InvalidCredentials, StatusCodes.Status401Unauthorized)] // gRPC Unauthenticated
-	[InlineData(ErrorCategory.Fault, StatusCodes.Status500InternalServerError)]     // gRPC Internal
+	[InlineData(ErrorCategory.Fault, StatusCodes.Status500InternalServerError)] // gRPC Internal
 	[InlineData(ErrorCategory.MultipleMatches, StatusCodes.Status500InternalServerError)] // gRPC Internal
-	async Task Each_failure_category_folds_to_the_status_the_gRPC_edge_would_reach(ErrorCategory category, int expectedStatus)
+	async Task Each_failure_category_folds_to_the_status_the_gRPC_edge_would_reach(ErrorCategory category,
+		int expectedStatus)
 	{
 		var controller = CreateController();
 
@@ -109,7 +104,8 @@ public sealed class GrpcControllerBaseTests
 
 		var objectResult = result.Result.ShouldBeOfType<ObjectResult>();
 		var problem = objectResult.Value.ShouldBeOfType<ProblemDetails>();
-		var entries = problem.Extensions["errors"].ShouldBeAssignableTo<IEnumerable<ProblemErrorEntry>>().ShouldNotBeNull().ToArray();
+		var entries = problem.Extensions["errors"].ShouldBeAssignableTo<IEnumerable<ProblemErrorEntry>>()
+			.ShouldNotBeNull().ToArray();
 		entries.Length.ShouldBe(3);
 		entries.ShouldContain(new ProblemErrorEntry("Policy/@birthDate", "cannot parse 'x' as DateOnly"));
 		entries.ShouldContain(new ProblemErrorEntry("Policy/Coverage[2]/@limit", "cannot parse 'y' as decimal"));
@@ -152,7 +148,9 @@ public sealed class GrpcControllerBaseTests
 		var controller = CreateController();
 		var correlationId = Guid.NewGuid();
 
-		var result = await controller.Fold(ValueTask.FromResult(Outcome<string>.Err(ErrorCategory.Fault, correlationId: correlationId)));
+		var result =
+			await controller.Fold(
+				ValueTask.FromResult(Outcome<string>.Err(ErrorCategory.Fault, correlationId: correlationId)));
 
 		var objectResult = result.Result.ShouldBeOfType<ObjectResult>();
 		var problem = objectResult.Value.ShouldBeOfType<ProblemDetails>();
@@ -203,12 +201,22 @@ public sealed class GrpcControllerBaseTests
 	[Fact]
 	void The_class_is_an_ApiController_that_negotiates_JSON_and_XML()
 	{
-		typeof(GrpcControllerBase).GetCustomAttributes(typeof(ApiControllerAttribute), inherit: false).ShouldNotBeEmpty();
+		typeof(GrpcControllerBase).GetCustomAttributes(typeof(ApiControllerAttribute), inherit: false)
+			.ShouldNotBeEmpty();
 
-		var consumes = (ConsumesAttribute)typeof(GrpcControllerBase).GetCustomAttributes(typeof(ConsumesAttribute), inherit: false).Single();
+		var consumes = (ConsumesAttribute)typeof(GrpcControllerBase)
+			.GetCustomAttributes(typeof(ConsumesAttribute), inherit: false).Single();
 		consumes.ContentTypes.ShouldBe(["application/json", "application/xml"]);
 
-		var produces = (ProducesAttribute)typeof(GrpcControllerBase).GetCustomAttributes(typeof(ProducesAttribute), inherit: false).Single();
+		var produces = (ProducesAttribute)typeof(GrpcControllerBase)
+			.GetCustomAttributes(typeof(ProducesAttribute), inherit: false).Single();
 		produces.ContentTypes.ShouldBe(["application/json", "application/xml"]);
+	}
+
+	sealed class TestController : GrpcControllerBase
+	{
+		public Task<ActionResult<TResponse>> Fold<TResponse>(ValueTask<Outcome<TResponse>> operation)
+			where TResponse : notnull =>
+			FoldAsync(operation);
 	}
 }
