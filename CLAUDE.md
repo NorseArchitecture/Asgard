@@ -21,7 +21,7 @@ Declared law — `Norse.Abstractions`: contracts and the rules every realm must 
 | `Abstractions.Emit` | none (netstandard2.0) | `CSharpEmit.AppendCSharp`, `Utf8NoBom` — the generator-authoring toolkit, consumed by generators platform-wide |
 | `gen/Abstractions.Web.Server.Generator` | Emit | `HandlerRegistrationGenerator` — ships **inside** the `Norse.Abstractions.Web.Server` package as a bundled analyzer |
 
-`Worker` and `Web.Server` are mutually invisible — neither references the other. Ten test projects under `tests/` (including `Abstractions.Mediator.Tests` for the pipeline law and one per generator); every test project contains at least one test, deliberately.
+`Worker` and `Web.Server` are mutually invisible — neither references the other. Eight test projects under `tests/` — one per source assembly plus one for the generator; the mediator pipeline law is tested inside `Abstractions.Web.Server.Tests` (`Mediator/` plus `SenderDispatchTests`), not in a dedicated project. Every test project contains at least one test, deliberately.
 
 **Spec index** — under `../Glitnir/docs/` (execution plans sit beside specs under `plans/`):
 

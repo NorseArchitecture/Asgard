@@ -23,6 +23,35 @@ Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contra
 
 `Worker` and `Web.Server` are mutually invisible — neither references the other.
 
+## The dependency graph
+
+Arrows point at the thing depended on. The isolated nodes are deliberate: `Migrations` and `Emit` ride on nothing so anything can ride on them, and `Components` touches only the Razor framework so it compiles into WASM and MAUI unburdened.
+
+```mermaid
+flowchart BT
+	subgraph Asgard["Asgard — Norse.Abstractions"]
+		Contracts
+		Components
+		Backend
+		WebServer["Web.Server"]
+		Worker
+		Migrations
+		Emit
+		Generator["Web.Server.Generator (gen)"]
+	end
+	subgraph Svartalfheim["Svartálfheim"]
+		Primitives["Norse.Primitives"]
+	end
+	Contracts --> Primitives
+	Backend --> Contracts
+	Backend --> Primitives
+	WebServer --> Backend
+	WebServer --> Contracts
+	Worker --> Backend
+	Generator --> Emit
+	Generator -. bundled analyzer inside the Web.Server package .-> WebServer
+```
+
 ## The law in force
 
 - **[`Outcome<T>`](src/Abstractions.Contracts/Outcome%7BT%7D.cs)** — the platform's second discriminated union and the interior half of [the two unions](https://github.com/NorseArchitecture/Glitnir/blob/master/docs/the-two-unions.md): it faces operations inside the host and describes *an event* — "this operation ran; here is how it went" — where Svartálfheim's `Result<T>` faces the boundary and describes *data*. A hand-rolled `sealed class` union, `[MustConsume]`-decorated, deliberately starved API (`Ok`/`Err`/`Match` — no typed happy-path accessors, so the unhappy path cannot be politely glanced past). It is never serialized, stored, or compared; each transport edge translates it into its native tongue. Live today: Blazor components consume `Task<Outcome<T>>` from the gRPC service contracts and pattern-match the result.
