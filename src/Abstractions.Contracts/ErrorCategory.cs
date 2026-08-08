@@ -25,7 +25,13 @@ public enum ErrorCategory : byte
 	/// <summary>Account or resource is locked out.</summary>
 	LockedOut = 4,
 
-	/// <summary>Invalid credentials provided. Vestigial — not actively produced, per the anti-enumeration ruling.</summary>
+	/// <summary>
+	///     Invalid credentials provided. Deliberately generic — the anti-enumeration stance means a
+	///     login rejection never discloses which credential failed; Himinbjörg's <c>LoginHandler</c>
+	///     produces exactly this category with one shared message ("Invalid email or password.").
+	///     (Ruled 2026-08-08: a prior claim here that this member was vestigial was the stale side of
+	///     a docs-vs-code drift — the working code stands.)
+	/// </summary>
 	InvalidCredentials = 5,
 
 	/// <summary>Operation not allowed given current state (a precondition failure, not an authorization failure).</summary>
