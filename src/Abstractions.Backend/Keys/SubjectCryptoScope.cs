@@ -1,16 +1,16 @@
 namespace Norse.Abstractions.Backend.Keys;
 
 /// <summary>
-/// The ambient write-subject for payload encryption. Exists because
-/// <c>IPersonalDataProtector.Protect(string)</c> carries no subject parameter: writers (the user
-/// store, the shred ceremony) establish the subject around the operation; readers never need it —
-/// ciphertext is self-describing. A protector asked to encrypt with no ambient subject fails loudly.
+///     The ambient write-subject for payload encryption. Exists because
+///     <c>IPersonalDataProtector.Protect(string)</c> carries no subject parameter: writers (the user
+///     store, the shred ceremony) establish the subject around the operation; readers never need it —
+///     ciphertext is self-describing. A protector asked to encrypt with no ambient subject fails loudly.
 /// </summary>
 public static class SubjectCryptoScope
 {
 	static readonly AsyncLocal<Guid?> _ambient = new();
 
-	/// <summary>The ambient subject, or <see langword="null"/> outside any scope.</summary>
+	/// <summary>The ambient subject, or <see langword="null" /> outside any scope.</summary>
 	public static Guid? CurrentSubject =>
 		_ambient.Value;
 
@@ -27,10 +27,10 @@ public static class SubjectCryptoScope
 		bool _disposed;
 
 		/// <exception cref="InvalidOperationException">
-		/// The ambient subject no longer matches what this scope established — a scope other than
-		/// the most-recently-created one was disposed. Scopes must be disposed in reverse order of
-		/// creation (most-recently-created first); a second call after this scope has already
-		/// disposed is a no-op, not a re-throw.
+		///     The ambient subject no longer matches what this scope established — a scope other than
+		///     the most-recently-created one was disposed. Scopes must be disposed in reverse order of
+		///     creation (most-recently-created first); a second call after this scope has already
+		///     disposed is a no-op, not a re-throw.
 		/// </exception>
 		public void Dispose()
 		{

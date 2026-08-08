@@ -20,6 +20,7 @@ public sealed class SubjectCryptoScopeTests
 				SubjectCryptoScope.CurrentSubject.ShouldBe(inner);
 			SubjectCryptoScope.CurrentSubject.ShouldBe(outer);
 		}
+
 		SubjectCryptoScope.CurrentSubject.ShouldBeNull();
 	}
 

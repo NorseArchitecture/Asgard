@@ -1,9 +1,9 @@
 namespace Norse.Abstractions.Backend.Keys;
 
 /// <summary>
-/// The lookup-plane keyring: service-level, rotatable, producing the keys blind indexes are HMAC'd
-/// under. Deliberately not per-subject — you must find the user before you know whose key to use.
-/// Rotation is a re-hash ceremony over all current rows, never a config flip.
+///     The lookup-plane keyring: service-level, rotatable, producing the keys blind indexes are HMAC'd
+///     under. Deliberately not per-subject — you must find the user before you know whose key to use.
+///     Rotation is a re-hash ceremony over all current rows, never a config flip.
 /// </summary>
 public interface ILookupKeyRing
 {
@@ -15,8 +15,8 @@ public interface ILookupKeyRing
 
 	/// <summary>Resolves a key by id.</summary>
 	/// <remarks>
-	/// Implementations return a caller-owned copy — the caller may zero the returned buffer after use
-	/// without affecting the ring's internal state.
+	///     Implementations return a caller-owned copy — the caller may zero the returned buffer after use
+	///     without affecting the ring's internal state.
 	/// </remarks>
 	/// <exception cref="KeyNotFoundException">The id is not on the ring.</exception>
 	byte[] GetKey(string keyId);

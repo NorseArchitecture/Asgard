@@ -3,10 +3,8 @@ namespace Norse.Abstractions.Contracts.Tests;
 public sealed class ProblemTests
 {
 	[Fact]
-	void Erased_category_claims_the_next_explicit_value()
-	{
+	void Erased_category_claims_the_next_explicit_value() =>
 		((byte)ErrorCategory.Erased).ShouldBe((byte)11);
-	}
 
 	[Fact]
 	void Problem_carries_an_optional_erasure_receipt()

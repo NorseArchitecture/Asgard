@@ -32,6 +32,42 @@ public sealed class HandlerRegistrationGeneratorTests
 		public sealed class LoginRequestValidator : AbstractValidator<LoginRequest>;
 		""";
 
+	const string WrapperContract = """
+		using Microsoft.AspNetCore.Authorization;
+		using Norse.Abstractions.Contracts;
+		using Norse.Abstractions.Web.Server.Mediator;
+		using FluentValidation;
+
+		namespace Norse.Identity.Web.Server;
+
+		public sealed record LoginWire;
+
+		[Authorize(Policy = "AuthN.Public")]
+		public sealed record LoginCommand(LoginWire Request) : CommandRequest<LoginWire, BoolResponse>(Request);
+
+		sealed class LoginCommandHandler : IRequestHandler<LoginCommand, BoolResponse>
+		{
+			public ValueTask<Outcome<BoolResponse>> Handle(LoginCommand request, CancellationToken cancellationToken = default) =>
+				ValueTask.FromResult(Outcome<BoolResponse>.Ok(new BoolResponse { Value = true }));
+		}
+
+		public sealed class LoginWireValidator : AbstractValidator<LoginWire>;
+		""";
+
+	// Generate / GenerateDiagnostics: build CSharpCompilation (assembly name "Norse.Identity.Web.Server",
+	// references: recovered ReferenceAssemblies + Norse.Abstractions.Contracts + Norse.Abstractions.Web.Server
+	// + FluentValidation + Microsoft.AspNetCore.Authorization), run HandlerRegistrationGenerator via
+	// CSharpGeneratorDriver, return the single generated tree's text / the driver diagnostics.
+
+	static readonly MetadataReference[] _extraReferences =
+	[
+		MetadataReference.CreateFromFile(
+			typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute).Assembly.Location),
+		MetadataReference.CreateFromFile(typeof(FluentValidation.IValidator<>).Assembly.Location),
+		MetadataReference.CreateFromFile(typeof(Abstractions.Contracts.BoolResponse).Assembly.Location),
+		MetadataReference.CreateFromFile(typeof(Server.Mediator.ISenderDispatch).Assembly.Location)
+	];
+
 	[Fact]
 	void Emits_handler_dispatch_and_validator_registrations_named_for_the_assembly()
 	{
@@ -89,28 +125,6 @@ public sealed class HandlerRegistrationGeneratorTests
 		var diagnostics = GenerateDiagnostics(withoutAuthorize);
 		diagnostics.ShouldContain(d => d.Id == "NORSE011" && d.Severity == DiagnosticSeverity.Error);
 	}
-
-	const string WrapperContract = """
-		using Microsoft.AspNetCore.Authorization;
-		using Norse.Abstractions.Contracts;
-		using Norse.Abstractions.Web.Server.Mediator;
-		using FluentValidation;
-
-		namespace Norse.Identity.Web.Server;
-
-		public sealed record LoginWire;
-
-		[Authorize(Policy = "AuthN.Public")]
-		public sealed record LoginCommand(LoginWire Request) : CommandRequest<LoginWire, BoolResponse>(Request);
-
-		sealed class LoginCommandHandler : IRequestHandler<LoginCommand, BoolResponse>
-		{
-			public ValueTask<Outcome<BoolResponse>> Handle(LoginCommand request, CancellationToken cancellationToken = default) =>
-				ValueTask.FromResult(Outcome<BoolResponse>.Ok(new BoolResponse { Value = true }));
-		}
-
-		public sealed class LoginWireValidator : AbstractValidator<LoginWire>;
-		""";
 
 	[Fact]
 	void Emits_the_CommandRequestValidator_adapter_registration_for_a_wrapper_command()
@@ -174,7 +188,10 @@ public sealed class HandlerRegistrationGeneratorTests
 		// ToFrozenDictionary throws ArgumentException on a duplicate key, which is exactly what a
 		// second plain AddSingleton<ISenderDispatch, SenderDispatch<...>> would have produced.
 		var assembly = CompileAndLoad(Contract);
-		var registration = assembly.GetType("Norse.Identity.Web.Server.NorseHandlerRegistration")!.GetMethod("AddNorseIdentityWebServerHandlers")!;
+		var registration =
+			assembly.GetType("Norse.Identity.Web.Server.NorseHandlerRegistration")!.GetMethod(
+				"AddNorseIdentityWebServerHandlers")!;
+
 		void InvokeGeneratedRegistration(IServiceCollection services) =>
 			registration.Invoke(null, [services]);
 
@@ -187,7 +204,8 @@ public sealed class HandlerRegistrationGeneratorTests
 		var loginRequestValidatorType = typeof(FluentValidation.IValidator<>).MakeGenericType(loginRequestType);
 		provider.GetServices(loginRequestValidatorType).ShouldHaveSingleItem();
 
-		var handlerType = typeof(IRequestHandler<,>).MakeGenericType(loginRequestType, typeof(Norse.Abstractions.Contracts.BoolResponse));
+		var handlerType =
+			typeof(IRequestHandler<,>).MakeGenericType(loginRequestType, typeof(Abstractions.Contracts.BoolResponse));
 		provider.GetServices(handlerType).ShouldHaveSingleItem();
 
 		var dispatchEntries = provider.GetServices<ISenderDispatch>();
@@ -238,7 +256,9 @@ public sealed class HandlerRegistrationGeneratorTests
 			""";
 
 		var assembly = CompileAndLoad(TwoHandlersSameWireType);
-		var registration = assembly.GetType("Norse.Identity.Web.Server.NorseHandlerRegistration")!.GetMethod("AddNorseIdentityWebServerHandlers")!;
+		var registration =
+			assembly.GetType("Norse.Identity.Web.Server.NorseHandlerRegistration")!.GetMethod(
+				"AddNorseIdentityWebServerHandlers")!;
 
 		ServiceCollection services = new();
 		registration.Invoke(null, [services]);
@@ -249,22 +269,10 @@ public sealed class HandlerRegistrationGeneratorTests
 		provider.GetServices(loginWireValidatorType).ShouldHaveSingleItem();
 
 		var dispatchEntries = provider.GetServices<ISenderDispatch>();
-		dispatchEntries.Count().ShouldBe(2); // one per distinct request type (LoginCommand, LoginAgainCommand), never collapsed
+		dispatchEntries.Count()
+			.ShouldBe(2); // one per distinct request type (LoginCommand, LoginAgainCommand), never collapsed
 		Should.NotThrow(() => dispatchEntries.ToFrozenDictionary(entry => entry.RequestType));
 	}
-
-	// Generate / GenerateDiagnostics: build CSharpCompilation (assembly name "Norse.Identity.Web.Server",
-	// references: recovered ReferenceAssemblies + Norse.Abstractions.Contracts + Norse.Abstractions.Web.Server
-	// + FluentValidation + Microsoft.AspNetCore.Authorization), run HandlerRegistrationGenerator via
-	// CSharpGeneratorDriver, return the single generated tree's text / the driver diagnostics.
-
-	static readonly MetadataReference[] _extraReferences =
-	[
-		MetadataReference.CreateFromFile(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute).Assembly.Location),
-		MetadataReference.CreateFromFile(typeof(FluentValidation.IValidator<>).Assembly.Location),
-		MetadataReference.CreateFromFile(typeof(Norse.Abstractions.Contracts.BoolResponse).Assembly.Location),
-		MetadataReference.CreateFromFile(typeof(Norse.Abstractions.Web.Server.Mediator.ISenderDispatch).Assembly.Location),
-	];
 
 	// CompileAndLoad: the emission-only tests above never call Emit (they only ToString() the
 	// generated syntax tree, no semantic binding required), so ReferenceAssemblies.Net110 +
@@ -280,7 +288,7 @@ public sealed class HandlerRegistrationGeneratorTests
 			.. ReferenceAssemblies.Net110,
 			.. _extraReferences,
 			MetadataReference.CreateFromFile(typeof(ServiceCollection).Assembly.Location),
-			MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location),
+			MetadataReference.CreateFromFile(typeof(IServiceCollection).Assembly.Location)
 		];
 
 		var compilation = CSharpCompilation.Create(

@@ -4,10 +4,6 @@ namespace Norse.Abstractions.Web.Server.Tests.Mediator;
 
 public sealed class CommandRequestTests
 {
-	sealed record PingWire(string Message);
-
-	sealed record PingCommand(PingWire Request) : CommandRequest<PingWire, string>(Request);
-
 	[Fact]
 	void Derived_command_is_assignable_to_ICommandRequest_of_its_response_type()
 	{
@@ -24,4 +20,8 @@ public sealed class CommandRequestTests
 
 		command.Request.ShouldBe(wire);
 	}
+
+	sealed record PingWire(string Message);
+
+	sealed record PingCommand(PingWire Request) : CommandRequest<PingWire, string>(Request);
 }

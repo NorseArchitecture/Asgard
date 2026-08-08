@@ -3,27 +3,27 @@ using Microsoft.AspNetCore.Components;
 namespace Norse.Abstractions.Components;
 
 /// <summary>
-/// A <see cref="ComponentBase"/> that owns a cancellation token scoped to its own lifetime, so a
-/// component's async work can cooperatively cancel when the component is disposed (e.g. the user
-/// navigates away mid-request) instead of touching UI state after teardown. Purely opt-in — a
-/// derived component that never reads <see cref="CancellationToken"/> pays no cost.
+///     A <see cref="ComponentBase" /> that owns a cancellation token scoped to its own lifetime, so a
+///     component's async work can cooperatively cancel when the component is disposed (e.g. the user
+///     navigates away mid-request) instead of touching UI state after teardown. Purely opt-in — a
+///     derived component that never reads <see cref="CancellationToken" /> pays no cost.
 /// </summary>
 public abstract class AsyncComponentBase : ComponentBase, IDisposable
 {
 	CancellationTokenSource? _cts;
 
 	/// <summary>
-	/// Gets a token that is canceled when this component is disposed. Lazily allocates its backing
-	/// <see cref="CancellationTokenSource"/> on first access, so components that never request it
-	/// never pay for it.
+	///     Gets a token that is canceled when this component is disposed. Lazily allocates its backing
+	///     <see cref="CancellationTokenSource" /> on first access, so components that never request it
+	///     never pay for it.
 	/// </summary>
 	protected CancellationToken CancellationToken =>
 		(_cts ??= new()).Token;
 
 	/// <summary>
-	/// Cancels and disposes the token returned by <see cref="CancellationToken"/>, if it was ever
-	/// requested. A derived component with its own disposal needs must override this and call
-	/// <c>base.Dispose()</c>.
+	///     Cancels and disposes the token returned by <see cref="CancellationToken" />, if it was ever
+	///     requested. A derived component with its own disposal needs must override this and call
+	///     <c>base.Dispose()</c>.
 	/// </summary>
 	public virtual void Dispose()
 	{
