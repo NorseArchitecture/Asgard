@@ -13,7 +13,7 @@ Declared law — `Norse.Abstractions`: contracts and the rules every realm must 
 | Assembly | Depends on | Carries |
 |---|---|---|
 | `Abstractions.Contracts` | `Norse.Primitives` | `Outcome<T>` (`Success<T>`/`Failed(Problem)`) + `Problem`/`ErrorCategory`/`BoolResponse`/`Unit`, `ErasureReceipt` |
-| `Abstractions.Components` | ASP.NET Core Components (framework only) | `AsyncComponentBase`, `IAppShellLayout`, `IDashboardWidget` — MAUI/WASM-safe, no server types |
+| `Abstractions.Components` | `Abstractions.Contracts`, ASP.NET Core Components | `AsyncComponentBase`, `IAppShellLayout`, `IDashboardWidget`, and the outcome-form seam hoisted from Heimdall 2026-08-09: `OutcomeFormComponentBase` (stamped-request `EditContextFor` mechanic) + `ServerValidation/` (`ServerErrorCoordinator`, `EditContextServerErrorsExtensions`, `CategoryDisplay`) — MAUI/WASM-safe, no server types |
 | `Abstractions.Backend` | `Abstractions.Contracts` | Read contract (`IReadRepository<TView>`, `IViewBearer<TView>`, `NotProjectedAttribute`); serialization seam (`Serialization/`); key seam (`Keys/`) |
 | `Abstractions.Web.Server` | `Abstractions.Backend`, FluentValidation | Mediator law (`Mediator/`), gRPC facade (`Facade/`), `IDeferredSignIn` |
 | `Abstractions.Worker` | `Abstractions.Backend` | **Empty — declared, no contracts yet.** Types land with their first consumer; docs listing `IWorkerHostPlugin`/repo contracts here were aspirational and are retired |

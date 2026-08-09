@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 	<PropertyGroup>
-		<Description>Norse component abstractions: Razor component base types shared across Blazor WASM, Blazor Server, and MAUI consumers. No ASP.NET Core, EF Core, or server-side infrastructure references — this assembly must compile into a client bundle.</Description>
+		<Description>Norse component abstractions: Razor component base types shared across Blazor WASM, Blazor Server, and MAUI consumers — AsyncComponentBase, and the outcome-consuming form seam hoisted from Heimdall 2026-08-09 (OutcomeFormComponentBase with the stamped-request EditContextFor mechanic, plus the ServerValidation bridge from Failed(Problem) to form UX). No ASP.NET Core server, EF Core, or server-side infrastructure references — this assembly must compile into a client bundle.</Description>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.*-*" />
+		<ProjectReference Include="../Abstractions.Contracts/Abstractions.Contracts.csproj" />
 	</ItemGroup>
 </Project>
