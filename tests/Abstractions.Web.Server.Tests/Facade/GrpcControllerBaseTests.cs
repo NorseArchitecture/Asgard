@@ -125,15 +125,12 @@ public sealed class GrpcControllerBaseTests
 	}
 
 	[Fact]
-	async Task A_failure_result_negotiates_to_the_RFC_9457_problem_media_types_not_the_class_level_Produces_pair()
+	async Task A_failure_result_negotiates_to_the_RFC_9457_problem_media_types()
 	{
-		// GrpcControllerBase carries a class-level [Produces("application/json", "application/xml")] for
-		// success payloads. Left alone, MVC's ProducesAttribute back-fills ContentTypes on ANY ObjectResult
-		// that doesn't already set them — including a Problem() result — locking failure responses to the
-		// plain media types instead of the RFC's problem+json/problem+xml, and routing an XML-negotiated
-		// failure straight into XmlContractOutputFormatter, which has no shape for ProblemDetails and would
-		// throw. ToProblemResult must set ContentTypes itself so the class-level attribute never gets the
-		// chance to.
+		// ToProblemResult must set ContentTypes itself: without them, content negotiation considers
+		// every registered output formatter for the ProblemDetails body — an XML-negotiated failure
+		// would route into XmlContractOutputFormatter (no shape for ProblemDetails, throws) and a
+		// plain-JSON failure would lose the problem+json signal.
 		var controller = CreateController();
 
 		var result = await controller.Fold(ValueTask.FromResult(Outcome<string>.Err(ErrorCategory.Conflict)));
@@ -199,18 +196,23 @@ public sealed class GrpcControllerBaseTests
 	}
 
 	[Fact]
-	void The_class_is_an_ApiController_that_negotiates_JSON_and_XML()
+	void The_class_carries_no_Swashbuckle_era_media_type_attributes()
 	{
 		typeof(GrpcControllerBase).GetCustomAttributes(typeof(ApiControllerAttribute), inherit: false)
 			.ShouldNotBeEmpty();
 
-		var consumes = (ConsumesAttribute)typeof(GrpcControllerBase)
-			.GetCustomAttributes(typeof(ConsumesAttribute), inherit: false).Single();
-		consumes.ContentTypes.ShouldBe(["application/json", "application/xml"]);
-
-		var produces = (ProducesAttribute)typeof(GrpcControllerBase)
-			.GetCustomAttributes(typeof(ProducesAttribute), inherit: false).Single();
-		produces.ContentTypes.ShouldBe(["application/json", "application/xml"]);
+		// Deliberately NO class-level [Consumes] or [Produces] -- Swashbuckle-era prior art. [Consumes]
+		// is actively harmful: it doubles as IAcceptsMetadata, and endpoint routing's
+		// AcceptsMatcherPolicy partitions the match DFA on request Content-Type -- a class-level stamp
+		// made every bodyless GET facade action unroutable (404, no candidates) for any request without
+		// a Content-Type header, proven live on Yggdrasil's composition root. [Produces] duplicated
+		// what the host's formatters already own: input policing is 415 via UnsupportedContentTypeFilter,
+		// output negotiation is formatter registration order plus ReturnHttpNotAcceptable, and failure
+		// results set their own RFC 9457 content types in ToProblemResult.
+		typeof(GrpcControllerBase).GetCustomAttributes(typeof(ConsumesAttribute), inherit: false)
+			.ShouldBeEmpty();
+		typeof(GrpcControllerBase).GetCustomAttributes(typeof(ProducesAttribute), inherit: false)
+			.ShouldBeEmpty();
 	}
 
 	sealed class TestController : GrpcControllerBase
