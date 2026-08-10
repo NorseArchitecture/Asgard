@@ -1,0 +1,20 @@
+@using Blazilla
+@using Microsoft.AspNetCore.Components.Forms
+<FluentValidator AsyncMode="true"/>
+
+@code {
+	[CascadingParameter]
+	EditContext? CascadedEditContext { get; set; }
+
+	/// <summary>
+	///     Stamps the marker <see cref="OutcomeFormComponentBase" /> checks before dispatch. <c>AsyncMode</c>
+	///     is fixed on and deliberately not a parameter: set false against an async rule, Blazilla reports the
+	///     form valid and then throws from an <c>async void</c> handler on a ThreadPool thread.
+	/// </summary>
+	protected override void OnInitialized()
+	{
+		if (CascadedEditContext is null)
+			throw new InvalidOperationException("<FormValidator/> must be placed inside an EditForm.");
+		CascadedEditContext.Properties[FormProperties.ValidatorAttached] = true;
+	}
+}
