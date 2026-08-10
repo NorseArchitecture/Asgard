@@ -13,8 +13,8 @@ namespace Norse.Abstractions.Web.Server.Facade;
 ///     <see cref="ControllerBase.NotFound()" />/<c>ControllerBase.Problem</c>) — never a Midgard
 ///     reference. A failure result explicitly sets its own <see cref="ObjectResult.ContentTypes" /> to the
 ///     RFC 9457 media types (<c>application/problem+json</c>/<c>application/problem+xml</c>) — otherwise
-///     the class-level <see cref="ConsumesAttribute" />/<see cref="ProducesAttribute" /> pair back-fills the
-///     plain ones onto every response that doesn't set its own, including this one. Rendering itself is the
+///     content negotiation would consider the plain media types for a failure body too, and an
+///     XML-negotiated failure would route into a contract formatter with no shape for it. Rendering itself is the
 ///     host-registered formatters' job (Midgard's <c>ProblemXmlWriter</c>/<c>ProblemXmlOutputFormatter</c>
 ///     and MVC's built-in <c>application/problem+json</c> support).
 ///     This fold is the text-channel counterpart to Midgard's <c>OutcomeServerInterceptor</c> (the gRPC
@@ -28,8 +28,15 @@ namespace Norse.Abstractions.Web.Server.Facade;
 ///     category by category against <c>ProblemExtensions.cs</c>, not assumed.
 /// </summary>
 [ApiController]
-[Consumes("application/json", "application/xml")]
-[Produces("application/json", "application/xml")]
+// Deliberately no class-level [Consumes] or [Produces] -- both are Swashbuckle-era prior art with no
+// job left here, and [Consumes] is actively harmful: it doubles as IAcceptsMetadata, and endpoint
+// routing's AcceptsMatcherPolicy partitions the match DFA on request Content-Type, making every
+// bodyless GET facade action unroutable (404) for requests without a Content-Type header. Media types
+// are the host's formatters' jurisdiction on both directions: input policing is 415 via
+// UnsupportedContentTypeFilter, output negotiation (including the JSON-by-default order and the honest
+// 406) is formatter registration order plus ReturnHttpNotAcceptable, and failure results set their own
+// RFC 9457 content types in ToProblemResult. The OpenAPI document derives its media types from those
+// same formatters, so it stays honest without attribute duplication.
 [RequestSizeLimit(1_048_576)] // spec §8.4 — the 1 MiB body cap is declared at the facade, not host config: a formatter (Task 9) cannot enforce body size on its own.
 public abstract class GrpcControllerBase : ControllerBase
 {
@@ -98,11 +105,10 @@ public abstract class GrpcControllerBase : ControllerBase
 
 		var result = Problem(statusCode: statusCode, title: problem.Category.ToString(), extensions: extensions);
 
-		// The class-level [Produces("application/json", "application/xml")] back-fills ContentTypes on
-		// any ObjectResult that doesn't already set them — a failure result must set its own RFC 9457
-		// media types here, before that attribute gets the chance to lock it to the plain ones. Left to
-		// the attribute, an XML-negotiated failure would route into XmlContractOutputFormatter, which
-		// carries no shape for ProblemDetails and throws.
+		// A failure result must set its own RFC 9457 media types: without them, content negotiation
+		// considers every registered output formatter for the ProblemDetails body — an XML-negotiated
+		// failure would route into XmlContractOutputFormatter, which carries no shape for
+		// ProblemDetails and throws, and a plain-JSON failure would lose the problem+json signal.
 		result.ContentTypes.Add("application/problem+json");
 		result.ContentTypes.Add("application/problem+xml");
 		return result;
