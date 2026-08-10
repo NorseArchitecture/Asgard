@@ -88,6 +88,27 @@ public sealed class FormValidationGateTests : BunitContext
 		probe.Instance.Context.GetValidationMessages().ShouldNotBeEmpty();
 	}
 
+	[Fact]
+	async Task Disposal_during_async_validation_cancels_the_dispatch()
+	{
+		// The user navigates away while an async rule is still in flight. AsyncComponentBase allocates
+		// its token source lazily, so a token first read at the dispatch site would be a brand-new,
+		// uncanceled one — and the form would call the service on behalf of a component that no longer
+		// exists. Reading the token before the validation await is what makes disposal reach this call.
+		Services.AddScoped<IValidator<Model>>(_ => new ModelValidator(TimeSpan.FromMilliseconds(300)));
+		// Held across the disposal: bUnit refuses Instance access once the component leaves the render
+		// tree, and the assertions are about what the component did after that point.
+		var probe = Render<Probe>(parameters =>
+			parameters.Add(p => p.Request, new Model { Password = "aaaaaaaa" })).Instance;
+
+		var submit = probe.Submit();
+		await DisposeComponentsAsync();
+		var submitted = await submit;
+
+		submitted.ShouldBeFalse();
+		probe.Calls.ShouldBe(0);
+	}
+
 	IRenderedComponent<Probe> Arrange(Model model, TimeSpan roundTrip)
 	{
 		Services.AddScoped<IValidator<Model>>(_ => new ModelValidator(roundTrip));

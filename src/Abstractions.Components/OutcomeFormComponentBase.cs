@@ -77,9 +77,10 @@ public abstract class OutcomeFormComponentBase : AsyncComponentBase
 	///     <paramref name="onSuccess" />.
 	/// </summary>
 	/// <returns>
-	///     <c>true</c> only when <paramref name="onSuccess" /> ran to completion. <c>false</c> covers every way the
-	///     form still has the user's attention — the model failed validation, a submit was already in flight, or the
-	///     call came back <c>Failed</c> and the problem is now rendered on the form. Callers that keep their own
+	///     <c>true</c> only when <paramref name="onSuccess" /> ran to completion. <c>false</c> covers every way it
+	///     did not — the model failed validation, a submit was already in flight, the component was disposed while
+	///     validation was still running, or the call came back <c>Failed</c> and the problem is now rendered on the
+	///     form. Callers that keep their own
 	///     status UI (a banner to leave standing, a scroll position to hold) branch on this rather than assuming a
 	///     completed <see cref="Task" /> means the submit landed.
 	/// </returns>
@@ -106,6 +107,9 @@ public abstract class OutcomeFormComponentBase : AsyncComponentBase
 		IsSubmitting = true;
 		try
 		{
+			// Read once, before the first await, so the token the dispatch runs under is the same one
+			// disposal cancels.
+			var cancellationToken = CancellationToken;
 			// CA2007 deliberately suppressed, not worked around: component code must resume on the
 			// renderer's sync context, so ConfigureAwait(false) here would be a correctness bug, not
 			// a style nit. See the class remarks.
@@ -115,7 +119,12 @@ public abstract class OutcomeFormComponentBase : AsyncComponentBase
 			// extension-style binding silently reports every form valid. See the plan's dispute.
 			if (!await EditContextExtensions.ValidateAsync(editContext))
 				return false;
-			var outcome = await call(CancellationToken);
+			// Not a silent fallback: the component is gone, so there is no form left to render a
+			// problem onto and no continuation worth running. Dispatching here would be an
+			// unrequested server write on behalf of a user who navigated away.
+			if (cancellationToken.IsCancellationRequested)
+				return false;
+			var outcome = await call(cancellationToken);
 			switch (outcome)
 			{
 				case Success<T>(var value):
