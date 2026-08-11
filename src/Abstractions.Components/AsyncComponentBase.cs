@@ -11,14 +11,17 @@ namespace Norse.Abstractions.Components;
 public abstract class AsyncComponentBase : ComponentBase, IDisposable
 {
 	CancellationTokenSource? _cts;
+	bool _disposed;
 
 	/// <summary>
 	///     Gets a token that is canceled when this component is disposed. Lazily allocates its backing
 	///     <see cref="CancellationTokenSource" /> on first access, so components that never request it
-	///     never pay for it.
+	///     never pay for it. After disposal the token is already canceled — lazy allocation must not
+	///     mean a torn-down component can mint a live token and keep working, which is what a first
+	///     access arriving after <see cref="Dispose" /> would otherwise do.
 	/// </summary>
 	protected CancellationToken CancellationToken =>
-		(_cts ??= new()).Token;
+		_disposed ? new(true) : (_cts ??= new()).Token;
 
 	/// <summary>
 	///     Cancels and disposes the token returned by <see cref="CancellationToken" />, if it was ever
@@ -28,6 +31,7 @@ public abstract class AsyncComponentBase : ComponentBase, IDisposable
 	public virtual void Dispose()
 	{
 		GC.SuppressFinalize(this);
+		_disposed = true;
 		if (_cts is null)
 			return;
 		_cts.Cancel();

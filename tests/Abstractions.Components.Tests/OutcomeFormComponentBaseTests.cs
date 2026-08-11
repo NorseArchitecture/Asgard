@@ -15,9 +15,11 @@ public sealed class OutcomeFormComponentBaseTests
 		context.ApplyServerErrors(Problem.ModelError(ErrorCategory.InvalidCredentials, "Stale."));
 		var invoked = false;
 
-		await harness.Submit(context, _ => Task.FromResult<Outcome<FakeResult>>(new Success<FakeResult>(new())),
+		var submitted = await harness.Submit(context,
+			_ => Task.FromResult<Outcome<FakeResult>>(new Success<FakeResult>(new())),
 			_ => invoked = true);
 
+		submitted.ShouldBeTrue();
 		invoked.ShouldBeTrue();
 		context.GetValidationMessages().ShouldBeEmpty();
 	}
@@ -30,11 +32,13 @@ public sealed class OutcomeFormComponentBaseTests
 		var context = harness.ContextFor(model);
 		var invoked = false;
 
-		await harness.Submit(context,
+		var submitted = await harness.Submit(context,
 			_ => Task.FromResult<Outcome<FakeResult>>(
 				new Failed(Problem.ModelError(ErrorCategory.LockedOut, "Locked."))),
 			_ => invoked = true);
 
+		// A dispatched call that came back Failed is still false: the form kept the user.
+		submitted.ShouldBeFalse();
 		invoked.ShouldBeFalse();
 		context.GetValidationMessages(new FieldIdentifier(model, string.Empty)).ShouldBe(["Locked."]);
 	}
@@ -65,16 +69,17 @@ public sealed class OutcomeFormComponentBaseTests
 			calls++;
 			return pending.Task;
 		}, _ => { });
-		await harness.Submit(context, _ =>
+		var overlapped = await harness.Submit(context, _ =>
 		{
 			calls++;
 			return pending.Task;
 		}, _ => { });
 
+		overlapped.ShouldBeFalse();
 		calls.ShouldBe(1);
 		harness.Submitting.ShouldBeTrue();
 		pending.SetResult(new Success<FakeResult>(new()));
-		await first;
+		(await first).ShouldBeTrue();
 		harness.Submitting.ShouldBeFalse();
 	}
 
@@ -91,6 +96,25 @@ public sealed class OutcomeFormComponentBaseTests
 		harness.Submitting.ShouldBeFalse();
 	}
 
+	[Fact]
+	async Task A_form_with_no_validator_is_rejected_loudly()
+	{
+		// A validator-less form and a valid form both validate to true with zero messages, so this
+		// must be caught before dispatch — after the fact the two are indistinguishable.
+		using Harness harness = new();
+		var context = harness.UnstampedContextFor(new object());
+		var calls = 0;
+
+		await Should.ThrowAsync<InvalidOperationException>(
+			harness.Submit(context, _ =>
+			{
+				calls++;
+				return Task.FromResult<Outcome<FakeResult>>(new Success<FakeResult>(new()));
+			}, _ => { }));
+
+		calls.ShouldBe(0);
+	}
+
 	sealed record FakeResult;
 
 	sealed class Harness : OutcomeFormComponentBase
@@ -98,11 +122,18 @@ public sealed class OutcomeFormComponentBaseTests
 		internal bool Submitting =>
 			IsSubmitting;
 
-		internal Task Submit<T>(EditContext editContext, Func<CancellationToken, Task<Outcome<T>>> call,
+		internal Task<bool> Submit<T>(EditContext editContext, Func<CancellationToken, Task<Outcome<T>>> call,
 			Action<T> onSuccess) where T : notnull =>
 			SubmitAsync(editContext, call, onSuccess);
 
-		internal EditContext ContextFor(object request) =>
+		internal EditContext ContextFor(object request)
+		{
+			var context = EditContextFor(request);
+			context.Properties[FormProperties.ValidatorAttached] = true;
+			return context;
+		}
+
+		internal EditContext UnstampedContextFor(object request) =>
 			EditContextFor(request);
 	}
 }

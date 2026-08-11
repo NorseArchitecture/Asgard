@@ -13,7 +13,7 @@ Declared law — `Norse.Abstractions`: contracts and the rules every realm must 
 | Assembly | Depends on | Carries |
 |---|---|---|
 | `Abstractions.Contracts` | `Norse.Primitives` | `Outcome<T>` (`Success<T>`/`Failed(Problem)`) + `Problem`/`ErrorCategory`/`BoolResponse`/`Unit`, `ErasureReceipt` |
-| `Abstractions.Components` | `Abstractions.Contracts`, ASP.NET Core Components | `AsyncComponentBase`, `IAppShellLayout`, `IDashboardWidget`, and the outcome-form seam hoisted from Heimdall 2026-08-09: `OutcomeFormComponentBase` (stamped-request `EditContextFor` mechanic) + `ServerValidation/` (`ServerErrorCoordinator`, `EditContextServerErrorsExtensions`, `CategoryDisplay`) — MAUI/WASM-safe, no server types |
+| `Abstractions.Components` | `Abstractions.Contracts`, ASP.NET Core Components, Blazilla (pulls in FluentValidation 12.1.1 transitively — by design, see Architecture Facts) | `AsyncComponentBase`, `IAppShellLayout`, `IDashboardWidget`, and the outcome-form seam hoisted from Heimdall 2026-08-09: `OutcomeFormComponentBase` (stamped-request `EditContextFor` mechanic), `FormValidator` (attaches Blazilla's FluentValidation pass, stamps `FormProperties.ValidatorAttached`) + `ServerValidation/` (`ServerErrorCoordinator`, `EditContextServerErrorsExtensions`, `CategoryDisplay`) — MAUI/WASM-safe, no server types |
 | `Abstractions.Backend` | `Abstractions.Contracts` | Read contract (`IReadRepository<TView>`, `IViewBearer<TView>`, `NotProjectedAttribute`); serialization seam (`Serialization/`); key seam (`Keys/`) |
 | `Abstractions.Web.Server` | `Abstractions.Backend`, FluentValidation | Mediator law (`Mediator/`), gRPC facade (`Facade/`), `IDeferredSignIn` |
 | `Abstractions.Worker` | `Abstractions.Backend` | **Empty — declared, no contracts yet.** Types land with their first consumer; docs listing `IWorkerHostPlugin`/repo contracts here were aspirational and are retired |
@@ -36,6 +36,7 @@ Declared law — `Norse.Abstractions`: contracts and the rules every realm must 
 | Migrations framework rollout | `Platform/plans/2026-06-28-migrations-framework-identity-schema.md` |
 | `IDeferredSignIn` placement | `Heimdall/plans/2026-07-14-deferred-signin-fix.md` |
 | Egress contracts (staged, not executed) | `Asgard/plans/2026-06-19-asgard-egress-contracts.md` |
+| Form validation hoist (`FormValidator`, gated `SubmitAsync`) | `Asgard/plans/2026-08-10-form-validation-hoist.md` |
 | The two unions | `the-two-unions.md` |
 
 ## Build & Test
@@ -55,6 +56,7 @@ Declared law — `Norse.Abstractions`: contracts and the rules every realm must 
 - **`IReadRepository<TView>` is the read contract, implemented exactly once** — by Midgard's generic repository over `IViewBearer<TView>` entities (2026-07-30 ruling, superseding the former four-contract family — `IDocumentRepository<T>`/`ICommandRepository<T>`/`ICachedRepository<T>` are gone, not pending). The write-side contract lands at the same address when designed.
 - **`SubjectKeyResult` is deliberately neither `Result<T>` nor `Outcome<T>`** — a seam-local closed three-state union for the key custody seam (`Keys/`: `ISubjectKeyStore`, `ILookupKeyRing`, `SubjectCryptoScope` ambient write-subject, `KeyDestroyedException`/`KeyMissingException`). Do not propose unifying it with either platform union.
 - **`IDeferredSignIn` is declared here so Midgard can implement it** without Himinbjörg taking a Midgard dependency for a hosting concern.
+- **FluentValidation is a platform-wide bet, not a dependency to minimize** (ruled 2026-08-10). `Abstractions.Components` takes Blazilla, which pulls FluentValidation 12.1.1 into every consumer with no opt-out — including consumers that never render a form. That is the intent: write the request, response, validator, and handler once, and the one validator class runs client-side in the form and server-side via `CommandRequestValidator<,,>` in the mediator pipeline. The platform does not own a validation framework and does not own its Blazor integration. Do not propose an opt-out seam, a `Forms`-suffixed split package, or a hand-rolled adapter to shed the transitive reference.
 - **The gateway layer is deleted, not dormant** — `GatewayGenerator`, `[GenerateGateway]`, and all emission modes are gone (2026-07-27); the empty `gen/Abstractions.Contracts.Generator` folders on disk are untracked residue, not a project.
 
 ## Process
