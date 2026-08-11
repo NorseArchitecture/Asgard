@@ -39,6 +39,22 @@ public sealed class OutcomeComponentBaseTests
 	}
 
 	[Fact]
+	async Task A_dispatch_on_an_already_disposed_component_never_invokes_the_call()
+	{
+		var called = false;
+		using Harness harness = new();
+		harness.Dispose();
+
+		await harness.Dispatch(_ =>
+		{
+			called = true;
+			return Task.FromResult(Success());
+		}, _ => { });
+
+		called.ShouldBeFalse();
+	}
+
+	[Fact]
 	async Task Failure_captures_the_problem_and_skips_the_continuation()
 	{
 		var invoked = false;

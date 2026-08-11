@@ -53,6 +53,12 @@ public abstract class OutcomeComponentBase : AsyncComponentBase
 			// Read once, before the first await, so the token the dispatch runs under is the same one
 			// disposal cancels.
 			var cancellationToken = CancellationToken;
+			// Not a silent fallback: the component is gone, so there is no page left to render a
+			// problem onto and no continuation worth running. Dispatching here would be an
+			// unrequested server write (e.g. the intended logout) on behalf of a user who navigated
+			// away — the exact gap SubmitAsync already guards against before its own service call.
+			if (cancellationToken.IsCancellationRequested)
+				return;
 			// CA2007 deliberately suppressed, not worked around: component code must resume on the
 			// renderer's sync context, so ConfigureAwait(false) here would be a correctness bug, not
 			// a style nit.
