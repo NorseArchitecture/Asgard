@@ -125,6 +125,11 @@ public abstract class OutcomeFormComponentBase : AsyncComponentBase
 			if (cancellationToken.IsCancellationRequested)
 				return false;
 			var outcome = await call(cancellationToken);
+			// Checked again after the await, mirroring the pre-dispatch check: disposal during the
+			// service call means there is no form left to render onto and no continuation worth
+			// running — the same rule OutcomeComponentBase states as law.
+			if (cancellationToken.IsCancellationRequested)
+				return false;
 			switch (outcome)
 			{
 				case Success<T>(var value):

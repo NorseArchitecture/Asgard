@@ -115,6 +115,25 @@ public sealed class OutcomeFormComponentBaseTests
 		calls.ShouldBe(0);
 	}
 
+	[Fact]
+	async Task Disposal_during_the_call_skips_the_continuation()
+	{
+		var invoked = false;
+		using Harness harness = new();
+		var context = harness.ContextFor(new object());
+
+		var submitted = await harness.Submit(context, _ =>
+		{
+			// Dispose mid-call: the token SubmitAsync captured before the await is now canceled,
+			// but the call itself still completes successfully.
+			harness.Dispose();
+			return Task.FromResult<Outcome<FakeResult>>(new Success<FakeResult>(new()));
+		}, _ => invoked = true);
+
+		submitted.ShouldBeFalse();
+		invoked.ShouldBeFalse();
+	}
+
 	sealed record FakeResult;
 
 	sealed class Harness : OutcomeFormComponentBase
