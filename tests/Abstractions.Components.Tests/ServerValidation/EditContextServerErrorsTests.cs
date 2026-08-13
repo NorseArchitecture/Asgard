@@ -81,24 +81,24 @@ public sealed class EditContextServerErrorsTests
 	}
 
 	[Fact]
-	void A_fresh_validation_pass_clears_all_server_messages()
+	async Task A_fresh_validation_pass_clears_all_server_messages()
 	{
 		var (context, _) = NewContext();
 		context.ApplyServerErrors(Problem.ModelError(ErrorCategory.InvalidCredentials, "Invalid email or password."));
 
-		context.Validate()
+		(await context.ValidateAsync(TestContext.Current.CancellationToken))
 			.ShouldBeTrue(); // raises OnValidationRequested → coordinator clears → no store blocks validity
 	}
 
 	[Fact]
-	void The_validation_request_clear_raises_its_own_state_change_notification()
+	async Task The_validation_request_clear_raises_its_own_state_change_notification()
 	{
 		var (context, _) = NewContext();
 		context.ApplyServerErrors(Problem.ModelError(ErrorCategory.InvalidCredentials, "Invalid email or password."));
 		var notified = false;
 		context.OnValidationStateChanged += (_, _) => notified = true;
 
-		context.Validate();
+		await context.ValidateAsync(TestContext.Current.CancellationToken);
 
 		notified.ShouldBeTrue(); // no other validator exists in this test — the coordinator itself must notify
 	}
