@@ -58,23 +58,22 @@ public sealed class GrpcControllerBaseTests
 	}
 
 	[Fact]
-	async Task NotFound_category_folds_to_a_bodyless_NotFoundResult()
+	async Task NotFound_category_folds_to_a_bare_404_with_no_body()
 	{
 		var controller = CreateController();
 
 		var result = await controller.Fold(ValueTask.FromResult(Outcome<string>.Err(ErrorCategory.NotFound)));
 
-		result.Result.ShouldBeOfType<NotFoundResult>();
+		var bare = result.Result.ShouldBeOfType<StatusCodeResult>();
+		bare.StatusCode.ShouldBe(StatusCodes.Status404NotFound);
 	}
 
 	[Theory]
 	[InlineData(ErrorCategory.Validation, StatusCodes.Status400BadRequest)] // gRPC InvalidArgument
 	[InlineData(ErrorCategory.Conflict, StatusCodes.Status409Conflict)] // gRPC AlreadyExists
-	[InlineData(ErrorCategory.Unauthorized, StatusCodes.Status401Unauthorized)] // gRPC Unauthenticated
 	[InlineData(ErrorCategory.Forbidden, StatusCodes.Status403Forbidden)] // gRPC PermissionDenied
 	[InlineData(ErrorCategory.LockedOut, StatusCodes.Status403Forbidden)] // gRPC PermissionDenied
-	[InlineData(ErrorCategory.NotAllowed, StatusCodes.Status400BadRequest)] // gRPC FailedPrecondition
-	[InlineData(ErrorCategory.InvalidCredentials, StatusCodes.Status401Unauthorized)] // gRPC Unauthenticated
+	[InlineData(ErrorCategory.NotAllowed, StatusCodes.Status403Forbidden)] // gRPC PermissionDenied
 	[InlineData(ErrorCategory.Fault, StatusCodes.Status500InternalServerError)] // gRPC Internal
 	[InlineData(ErrorCategory.MultipleMatches, StatusCodes.Status500InternalServerError)] // gRPC Internal
 	async Task Each_failure_category_folds_to_the_status_the_gRPC_edge_would_reach(ErrorCategory category,
@@ -88,6 +87,19 @@ public sealed class GrpcControllerBaseTests
 		objectResult.StatusCode.ShouldBe(expectedStatus);
 		var problem = objectResult.Value.ShouldBeOfType<ProblemDetails>();
 		problem.Title.ShouldBe(category.ToString());
+	}
+
+	[Theory]
+	[InlineData(ErrorCategory.Unauthorized)] // gRPC Unauthenticated -- silent, no body (401 explains nothing)
+	[InlineData(ErrorCategory.InvalidCredentials)] // gRPC Unauthenticated -- silent, no body
+	async Task Silent_categories_fold_to_a_bare_401_with_no_body(ErrorCategory category)
+	{
+		var controller = CreateController();
+
+		var result = await controller.Fold(ValueTask.FromResult(Outcome<string>.Err(category)));
+
+		var bare = result.Result.ShouldBeOfType<StatusCodeResult>();
+		bare.StatusCode.ShouldBe(StatusCodes.Status401Unauthorized);
 	}
 
 	[Fact]

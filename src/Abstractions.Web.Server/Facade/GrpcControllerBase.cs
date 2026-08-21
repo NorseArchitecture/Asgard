@@ -24,8 +24,9 @@ namespace Norse.Abstractions.Web.Server.Facade;
 ///     401/403/404/409/410/500 etc.) would assign to the gRPC <c>StatusCode</c> the interceptor selects for
 ///     that same category — including <see cref="ErrorCategory.Erased" />, which folds to 410 Gone from the
 ///     gRPC edge's <c>NotFound</c> (its <c>ErrorInfo.Reason</c> carries the authoritative "Erased"
-///     discriminator that distinguishes it from a plain <see cref="ErrorCategory.NotFound" />). Verified
-///     category by category against <c>ProblemExtensions.cs</c>, not assumed.
+///     discriminator that distinguishes it from a plain <see cref="ErrorCategory.NotFound" />). Both edges
+///     project from the same declared source, <see cref="TransportDispositions" />, so the two can no
+///     longer disagree by construction.
 /// </summary>
 [ApiController]
 // Deliberately no class-level [Consumes] or [Produces] -- both are Swashbuckle-era prior art with no
@@ -42,12 +43,15 @@ public abstract class GrpcControllerBase : ControllerBase
 {
 	/// <summary>
 	///     Folds a gRPC-service-shaped <see cref="Outcome{T}" /> operation into an <see cref="ActionResult{TValue}" />:
-	///     success → <see cref="ControllerBase.Ok(object)" />; <see cref="ErrorCategory.NotFound" /> →
-	///     <see cref="ControllerBase.NotFound()" /> (no body); every other failure category → problem details
-	///     (spec §11) via <c>ControllerBase.Problem</c>, carrying an <c>errors</c> extension —
-	///     <see cref="ProblemErrorEntry" /> entries flattened from <see cref="Problem.Errors" /> — when any are
-	///     present, and a <c>correlationId</c> extension when <see cref="Problem.CorrelationId" /> is set
-	///     (populated only for <see cref="ErrorCategory.Fault" />).
+	///     success → <see cref="ControllerBase.Ok(object)" />; every failure category folds via
+	///     <see cref="TransportDispositions.For(ErrorCategory)" /> — a category whose disposition does not
+	///     permit a body (<see cref="ErrorCategory.NotFound" />, <see cref="ErrorCategory.Unauthorized" />,
+	///     <see cref="ErrorCategory.InvalidCredentials" />) folds to a bare <see cref="StatusCodeResult" />,
+	///     no body; every other category folds to problem details (spec §11) via <c>ControllerBase.Problem</c>,
+	///     carrying an <c>errors</c> extension — <see cref="ProblemErrorEntry" /> entries flattened from
+	///     <see cref="Problem.Errors" /> — when any are present, and a <c>correlationId</c> extension when
+	///     <see cref="Problem.CorrelationId" /> is set (populated only for <see cref="ErrorCategory.Fault" />),
+	///     with RFC 9457 content negotiation (<c>application/problem+json</c>/<c>application/problem+xml</c>).
 	/// </summary>
 	protected async Task<ActionResult<TResponse>> FoldAsync<TResponse>(ValueTask<Outcome<TResponse>> operation)
 		where TResponse : notnull
@@ -55,29 +59,19 @@ public abstract class GrpcControllerBase : ControllerBase
 		var outcome = await operation.ConfigureAwait(false);
 		return outcome.Match<ActionResult<TResponse>>(
 			success => Ok(success),
-			problem => problem.Category == ErrorCategory.NotFound ?
-				NotFound() :
-				ToProblemResult(problem));
+			problem => ToResult(problem));
 	}
 
-	ObjectResult ToProblemResult(Problem problem)
+	ActionResult ToResult(Problem problem)
 	{
-		var statusCode = problem.Category switch
-		{
-			ErrorCategory.Validation => StatusCodes.Status400BadRequest, // gRPC InvalidArgument
-			ErrorCategory.Conflict => StatusCodes.Status409Conflict, // gRPC AlreadyExists
-			ErrorCategory.Unauthorized => StatusCodes.Status401Unauthorized, // gRPC Unauthenticated
-			ErrorCategory.Forbidden or ErrorCategory.LockedOut => StatusCodes
-				.Status403Forbidden, // gRPC PermissionDenied
-			ErrorCategory.NotAllowed => StatusCodes.Status400BadRequest, // gRPC FailedPrecondition
-			ErrorCategory.InvalidCredentials => StatusCodes.Status401Unauthorized, // gRPC Unauthenticated
-			ErrorCategory.Fault => StatusCodes.Status500InternalServerError, // gRPC Internal
-			ErrorCategory.MultipleMatches => StatusCodes.Status500InternalServerError, // gRPC Internal
-			ErrorCategory.Erased => StatusCodes
-				.Status410Gone, // gRPC NotFound — ErrorInfo.Reason carries the authoritative "Erased"
-			_ => StatusCodes
-				.Status500InternalServerError // gRPC Unknown — the Unspecified sentinel; never a real emitted category.
-		};
+		var disposition = TransportDispositions.For(problem.Category);
+
+		// The silent categories and the bodyless 404 share one exit, and it is the only exit that can
+		// produce them: there is no branch below that could attach a body to a disposition which does not
+		// permit one. That is the structural half of the "401 explains nothing" ruling -- not a
+		// convention a future edit could forget.
+		if (!disposition.BodyPermitted)
+			return new StatusCodeResult(disposition.HttpStatus);
 
 		Dictionary<string, object?>? extensions = null;
 		if (problem.Errors.Count > 0)
@@ -103,12 +97,8 @@ public abstract class GrpcControllerBase : ControllerBase
 			extensions["severedAt"] = receipt.SeveredAt.ToString("O", CultureInfo.InvariantCulture);
 		}
 
-		var result = Problem(statusCode: statusCode, title: problem.Category.ToString(), extensions: extensions);
-
-		// A failure result must set its own RFC 9457 media types: without them, content negotiation
-		// considers every registered output formatter for the ProblemDetails body — an XML-negotiated
-		// failure would route into XmlContractOutputFormatter, which carries no shape for
-		// ProblemDetails and throws, and a plain-JSON failure would lose the problem+json signal.
+		var result = Problem(statusCode: disposition.HttpStatus, title: problem.Category.ToString(),
+			extensions: extensions);
 		result.ContentTypes.Add("application/problem+json");
 		result.ContentTypes.Add("application/problem+xml");
 		return result;
