@@ -34,7 +34,13 @@ public enum ErrorCategory : byte
 	/// </summary>
 	InvalidCredentials = 5,
 
-	/// <summary>Operation not allowed given current state (a precondition failure, not an authorization failure).</summary>
+	/// <summary>
+	///     The caller may not perform this operation in the current state — an authorization answer, not a
+	///     request-shape one. Folds to 403 (spec §1.8, ruled 2026-08-21): the question it answers is
+	///     "can I do the thing?", never "is this well-formed?". Its prior contract named it a precondition
+	///     failure folding to 400; that reading was amended rather than left to contradict the mapping.
+	///     Sole production producer is Himinbjörg's <c>LoginHandler</c> for <c>SignInResult.IsNotAllowed</c>.
+	/// </summary>
 	NotAllowed = 6,
 
 	/// <summary>Caller is not authenticated for an operation that requires it.</summary>
