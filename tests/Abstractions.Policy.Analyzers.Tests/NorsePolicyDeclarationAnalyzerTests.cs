@@ -1,4 +1,4 @@
-namespace Norse.Abstractions.Web.Server.Generator.Tests;
+namespace Norse.Abstractions.Policy.Analyzers.Tests;
 
 public sealed class NorsePolicyDeclarationAnalyzerTests
 {

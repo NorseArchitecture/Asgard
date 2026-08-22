@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Authorization" Version="11.*-*" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="*" PrivateAssets="all" />
+		<ProjectReference Include="../../gen/Abstractions.Policy.Analyzers/Abstractions.Policy.Analyzers.csproj" />
+		<ProjectReference Include="../../src/Abstractions.Components/Abstractions.Components.csproj" />
+	</ItemGroup>
+</Project>

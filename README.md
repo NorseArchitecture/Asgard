@@ -8,7 +8,7 @@
 
 *Image credit: [@norsemythologyclips](https://www.instagram.com/norsemythologyclips/) — go follow them.*
 
-Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contracts and rules every realm must honor. No implementations live here, by design. Seven assemblies plus a source generator, split by dependency wall and consumer context:
+Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contracts and rules every realm must honor. No implementations live here, by design. Seven assemblies plus two source generators, split by dependency wall and consumer context:
 
 | Assembly | Upstream | Purpose |
 |---|---|---|
@@ -20,6 +20,7 @@ Declared law for the Norse Architecture — **`Norse.Abstractions`**: the contra
 | [`Norse.Abstractions.Migrations`](src/Abstractions.Migrations) | none | [`IMigrationContributor`](src/Abstractions.Migrations/IMigrationContributor.cs) and [`ISeedContributor`](src/Abstractions.Migrations/Seeding/ISeedContributor.cs) (EF-free) |
 | [`Norse.Abstractions.Emit`](src/Abstractions.Emit) | none | The generator-authoring toolkit ([`CSharpEmit`](src/Abstractions.Emit/CSharpEmit.cs), [`Utf8NoBom`](src/Abstractions.Emit/Utf8NoBom.cs)) — netstandard2.0 so source generators across the platform can consume it |
 | [`Abstractions.Web.Server.Generator`](gen/Abstractions.Web.Server.Generator) | `.Emit` | [`HandlerRegistrationGenerator`](gen/Abstractions.Web.Server.Generator/HandlerRegistrationGenerator.cs) — compile-time handler/dispatch/validator registration (`AddNorse{Realm}Handlers()`), bundled inside the `Norse.Abstractions.Web.Server` package |
+| [`Abstractions.Policy.Analyzers`](gen/Abstractions.Policy.Analyzers) | none | [`NorsePolicyDeclarationAnalyzer`](gen/Abstractions.Policy.Analyzers/NorsePolicyDeclarationAnalyzer.cs) (NORSE015) — validates `[NorsePolicy]` declarations at the source that authors them, bundled inside the `Norse.Abstractions.Components` package |
 
 `Worker` and `Web.Server` are mutually invisible — neither references the other.
 

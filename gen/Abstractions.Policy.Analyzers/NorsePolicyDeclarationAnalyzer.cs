@@ -2,13 +2,12 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Norse.Abstractions.Web.Server.Generator;
+namespace Norse.Abstractions.Policy.Analyzers;
 
 /// <summary>
 ///     NORSE015 in the project that authors the declaration. Ships bundled in
-///     <c>Norse.Abstractions.Web.Server</c> for the same reason NORSE010/011 do: it keys on this assembly's
-///     own <c>NorsePolicyAttribute</c>, and every realm declaring a policy already references this package
-///     to name the attribute at all.
+///     <c>Norse.Abstractions.Components</c> -- the package that actually declares
+///     <c>NorsePolicyAttribute</c>, and the one every policy-declaring project actually references.
 /// </summary>
 /// <remarks>
 ///     Shares its validation rules with Midgard's policy generator and its diagnostic id. The split is by

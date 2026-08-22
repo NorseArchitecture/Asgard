@@ -5,13 +5,13 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Norse.Abstractions.Components.Authorization;
 
-namespace Norse.Abstractions.Web.Server.Generator.Tests;
+namespace Norse.Abstractions.Policy.Analyzers.Tests;
 
 /// <summary>
 ///     Analyzer test harness for this project's <see cref="Microsoft.CodeAnalysis.Diagnostics.DiagnosticAnalyzer" />s
-///     — as distinct from <see cref="HandlerRegistrationGeneratorTests" />'s generator-driver harness, which
-///     exercises an <c>IIncrementalGenerator</c>. Compiles the given source against
-///     <see cref="ReferenceAssemblies.Net110" /> plus this assembly's own Authorization types, runs
+///     — as distinct from the sibling <c>Abstractions.Web.Server.Generator.Tests</c> project's
+///     generator-driver harness, which exercises an <c>IIncrementalGenerator</c>. Compiles the given source
+///     against <see cref="ReferenceAssemblies.Net110" /> plus this assembly's own Authorization types, runs
 ///     <see cref="NorsePolicyDeclarationAnalyzer" />, and asserts on the resulting diagnostics.
 /// </summary>
 static class Verify

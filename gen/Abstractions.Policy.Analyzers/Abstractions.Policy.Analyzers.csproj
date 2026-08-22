@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<Description>Norse.Abstractions.Policy.Analyzers: NORSE015 -- a [NorsePolicy]-decorated method must be a well-formed policy declaration (public, static, non-generic, void-returning, exactly one AuthorizationPolicyBuilder parameter, not async). Checked here for source in the compilation being built, so a malformed declaration fails at the point of authorship rather than only when Midgard's policy generator consumes it as metadata. Bundled into Norse.Abstractions.Components's package (analyzers/dotnet/cs/) -- the package that declares NorsePolicyAttribute -- never referenced or packed standalone.</Description>
+	</PropertyGroup>
+</Project>
