@@ -79,6 +79,8 @@ public sealed class NorsePolicyDeclarationAnalyzer : DiagnosticAnalyzer
 			return "neither the method nor its containing type may be generic";
 		if (!method.ReturnsVoid)
 			return "the method must return void";
+		if (method.IsAsync)
+			return "the method must not be declared async -- generated registration invokes it synchronously";
 
 		return method.Parameters.Length == 1
 			&& builder is not null

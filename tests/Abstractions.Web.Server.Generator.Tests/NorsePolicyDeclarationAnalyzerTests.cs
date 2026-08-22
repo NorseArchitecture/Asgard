@@ -36,6 +36,7 @@ public sealed class NorsePolicyDeclarationAnalyzerTests
 	[InlineData("""[NorsePolicy("X")] public static void M(string s) { }""")]
 	[InlineData("""[NorsePolicy("X")] public static void M(AuthorizationPolicyBuilder p, int extra) { }""")]
 	[InlineData("""[NorsePolicy("X")] public static void M<T>(AuthorizationPolicyBuilder p) { }""")]
+	[InlineData("""[NorsePolicy("X")] public static async void M(AuthorizationPolicyBuilder p) { await System.Threading.Tasks.Task.Yield(); }""")]
 	[InlineData("""[NorsePolicy("")] public static void M(AuthorizationPolicyBuilder p) { }""")]
 	[InlineData("""[NorsePolicy(null)] public static void M(AuthorizationPolicyBuilder p) { }""")]
 	async Task Strikes_a_malformed_declaration(string member) =>
