@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 
-namespace Norse.Abstractions.Web.Server.Authorization;
+namespace Norse.Abstractions.Components.Authorization;
 
 /// <summary>Declares the platform-standard authorization policies.</summary>
 public static class NorsePlatformPolicies

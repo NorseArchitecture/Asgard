@@ -1,9 +1,9 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
-using Norse.Abstractions.Web.Server.Authorization;
+using Norse.Abstractions.Components.Authorization;
 
-namespace Norse.Abstractions.Web.Server.Tests.Authorization;
+namespace Norse.Abstractions.Components.Tests.Authorization;
 
 public sealed class NorsePolicyDeclarationTests
 {

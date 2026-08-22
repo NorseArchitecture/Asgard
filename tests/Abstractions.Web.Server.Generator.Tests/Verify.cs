@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Norse.Abstractions.Web.Server.Authorization;
+using Norse.Abstractions.Components.Authorization;
 
 namespace Norse.Abstractions.Web.Server.Generator.Tests;
 

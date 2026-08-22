@@ -5,6 +5,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Blazilla" Version="2.*" />
+		<PackageReference Include="Microsoft.AspNetCore.Authorization" Version="11.*-*" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.*-*" />
 		<ProjectReference Include="../Abstractions.Contracts/Abstractions.Contracts.csproj" />
 	</ItemGroup>
