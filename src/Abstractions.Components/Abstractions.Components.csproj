@@ -8,5 +8,20 @@
 		<PackageReference Include="Microsoft.AspNetCore.Authorization" Version="11.*-*" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="11.*-*" />
 		<ProjectReference Include="../Abstractions.Contracts/Abstractions.Contracts.csproj" />
+		<ProjectReference
+			Include="../../gen/Abstractions.Policy.Analyzers/Abstractions.Policy.Analyzers.csproj"
+			OutputItemType="Analyzer"
+			ReferenceOutputAssembly="false" />
 	</ItemGroup>
+	<Target Name="IncludeGeneratorInPackage" BeforeTargets="_GetPackageFiles">
+		<MSBuild Projects="../../gen/Abstractions.Policy.Analyzers/Abstractions.Policy.Analyzers.csproj"
+			Targets="Build"
+			Properties="Configuration=$(Configuration)" />
+		<ItemGroup>
+			<None Include="../../gen/Abstractions.Policy.Analyzers/bin/$(Configuration)/netstandard2.0/Norse.Abstractions.Policy.Analyzers.dll"
+				Pack="true"
+				PackagePath="analyzers/dotnet/cs/"
+				Visible="false" />
+		</ItemGroup>
+	</Target>
 </Project>

@@ -5,7 +5,6 @@
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="*" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="11.*-*" />
 		<ProjectReference Include="../../gen/Abstractions.Web.Server.Generator/Abstractions.Web.Server.Generator.csproj" />
-		<ProjectReference Include="../../src/Abstractions.Components/Abstractions.Components.csproj" />
 		<ProjectReference Include="../../src/Abstractions.Contracts/Abstractions.Contracts.csproj" />
 		<ProjectReference Include="../../src/Abstractions.Web.Server/Abstractions.Web.Server.csproj" />
 	</ItemGroup>

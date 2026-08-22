@@ -1,15 +1,15 @@
 using Microsoft.CodeAnalysis;
 
-namespace Norse.Abstractions.Web.Server.Generator;
+namespace Norse.Abstractions.Policy.Analyzers;
 
 #pragma warning disable RS2008 // No analyzer-release ledger, matching the platform's other generators/analyzers.
 
 /// <summary>
 ///     NORSE015 — the policy-declaration rule, checked here for source in the compilation being built.
 ///     NORSE010/NORSE011 (duplicate handler, missing authorization policy) are declared inline in
-///     <see cref="HandlerRegistrationGenerator" /> rather than here; NORSE015 gets its own descriptor file
-///     because <see cref="NorsePolicyDeclarationAnalyzer" /> is a plain <c>DiagnosticAnalyzer</c>, not part
-///     of the incremental generator's diagnostics.
+///     Asgard's <c>HandlerRegistrationGenerator</c>, a separate project entirely, rather than here;
+///     NORSE015 gets its own descriptor file because <see cref="NorsePolicyDeclarationAnalyzer" /> is a
+///     plain <c>DiagnosticAnalyzer</c>, not part of the incremental generator's diagnostics.
 /// </summary>
 static class Diagnostics
 {

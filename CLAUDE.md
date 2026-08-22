@@ -8,7 +8,7 @@ Session root must be **Bifröst**, never this repo. Org-wide settings (`superpow
 
 ## What This Realm Is
 
-Declared law — `Norse.Abstractions`: contracts and the rules every realm must honor. **No implementations live here, by design.** Seven source assemblies plus one source generator, split by dependency wall and consumer context:
+Declared law — `Norse.Abstractions`: contracts and the rules every realm must honor. **No implementations live here, by design.** Seven source assemblies plus two source generators, split by dependency wall and consumer context:
 
 | Assembly | Depends on | Carries |
 |---|---|---|
@@ -20,8 +20,9 @@ Declared law — `Norse.Abstractions`: contracts and the rules every realm must 
 | `Abstractions.Migrations` | none | `IMigrationContributor`, `Seeding/ISeedContributor` |
 | `Abstractions.Emit` | none (netstandard2.0) | `CSharpEmit.AppendCSharp`, `Utf8NoBom` — the generator-authoring toolkit, consumed by generators platform-wide |
 | `gen/Abstractions.Web.Server.Generator` | Emit | `HandlerRegistrationGenerator` — ships **inside** the `Norse.Abstractions.Web.Server` package as a bundled analyzer |
+| `gen/Abstractions.Policy.Analyzers` | none | `NorsePolicyDeclarationAnalyzer` (NORSE015) — ships **inside** the `Norse.Abstractions.Components` package as a bundled analyzer, declared in this realm's `Directory.Analyzers.props` manifest so every workspace compilation gets it too |
 
-`Worker` and `Web.Server` are mutually invisible — neither references the other. Eight test projects under `tests/` — one per source assembly plus one for the generator; the mediator pipeline law is tested inside `Abstractions.Web.Server.Tests` (`Mediator/` plus `SenderDispatchTests`), not in a dedicated project. Every test project contains at least one test, deliberately.
+`Worker` and `Web.Server` are mutually invisible — neither references the other. Nine test projects under `tests/` — one per source assembly plus one per generator; the mediator pipeline law is tested inside `Abstractions.Web.Server.Tests` (`Mediator/` plus `SenderDispatchTests`), not in a dedicated project. Every test project contains at least one test, deliberately.
 
 **Spec index** — under `../Glitnir/docs/` (execution plans sit beside specs under `plans/`):
 
