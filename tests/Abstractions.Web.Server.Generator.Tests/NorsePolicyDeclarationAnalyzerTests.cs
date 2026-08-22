@@ -4,7 +4,7 @@ public sealed class NorsePolicyDeclarationAnalyzerTests
 {
 	const string Preamble = """
 		using Microsoft.AspNetCore.Authorization;
-		using Norse.Abstractions.Web.Server.Authorization;
+		using Norse.Abstractions.Components.Authorization;
 		""";
 
 	// Non-static wrapper, deliberately: a static class cannot host an instance member at all (CS0708), and

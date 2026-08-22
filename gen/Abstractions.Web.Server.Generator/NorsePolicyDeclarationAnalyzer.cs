@@ -18,7 +18,7 @@ namespace Norse.Abstractions.Web.Server.Generator;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class NorsePolicyDeclarationAnalyzer : DiagnosticAnalyzer
 {
-	const string AttributeMetadataName = "Norse.Abstractions.Web.Server.Authorization.NorsePolicyAttribute";
+	const string AttributeMetadataName = "Norse.Abstractions.Components.Authorization.NorsePolicyAttribute";
 	const string BuilderMetadataName = "Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder";
 
 	public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =

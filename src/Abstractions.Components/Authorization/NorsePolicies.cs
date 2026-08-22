@@ -1,4 +1,4 @@
-namespace Norse.Abstractions.Web.Server.Authorization;
+namespace Norse.Abstractions.Components.Authorization;
 
 /// <summary>
 ///     Platform-standard policy names — the seed of Asgard#57's standard set. Realm-specific names stay in

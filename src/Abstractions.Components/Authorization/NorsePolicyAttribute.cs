@@ -1,4 +1,4 @@
-namespace Norse.Abstractions.Web.Server.Authorization;
+namespace Norse.Abstractions.Components.Authorization;
 
 /// <summary>
 ///     Declares that the decorated method configures the named authorization policy. The attribute carries
