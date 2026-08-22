@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<ItemGroup>
-		<PackageReference Include="protobuf-net" Version="*" />
+		<PackageReference Include="protobuf-net" Version="3.*" />
 		<ProjectReference Include="../../src/Abstractions.Contracts/Abstractions.Contracts.csproj" />
 	</ItemGroup>
 </Project>
