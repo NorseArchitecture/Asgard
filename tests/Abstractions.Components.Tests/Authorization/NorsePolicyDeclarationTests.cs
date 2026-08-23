@@ -24,10 +24,11 @@ public sealed class NorsePolicyDeclarationTests
 	{
 		NorsePolicies.Anonymous.ShouldBe("Norse.Anonymous");
 		NorsePolicies.Probe.ShouldBe("Norse.Probe");
+		NorsePolicies.Machine.ShouldBe("Norse.Machine");
 	}
 
 	[Fact]
-	void Both_platform_policies_are_declared_in_metadata()
+	void All_three_platform_policies_are_declared_in_metadata()
 	{
 		var declared = typeof(NorsePlatformPolicies)
 			.GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -35,7 +36,7 @@ public sealed class NorsePolicyDeclarationTests
 			.Where(name => name is not null)
 			.ToArray();
 
-		declared.ShouldBe([NorsePolicies.Anonymous, NorsePolicies.Probe], ignoreOrder: true);
+		declared.ShouldBe([NorsePolicies.Anonymous, NorsePolicies.Probe, NorsePolicies.Machine], ignoreOrder: true);
 	}
 
 	[Fact]
@@ -70,4 +71,18 @@ public sealed class NorsePolicyDeclarationTests
 	void The_probe_policy_does_not_demand_a_principal() =>
 		Build(NorsePolicies.Probe).Requirements
 			.ShouldNotContain(r => r is DenyAnonymousAuthorizationRequirement);
+
+	[Fact]
+	void The_machine_policy_requires_a_principal() =>
+		Build(NorsePolicies.Machine).Requirements
+			.ShouldContain(r => r is DenyAnonymousAuthorizationRequirement);
+
+	[Fact]
+	void The_machine_policy_does_not_pin_a_scheme()
+	{
+		// Asgard cannot reference NorseSchemes.Machine (Midgard) -- the dependency wall runs one direction.
+		// Scheme selection is entirely NorseLaneSelector's job (Midgard); this policy only checks the
+		// principal, exactly like Anonymous and Probe, neither of which pins a scheme either.
+		Build(NorsePolicies.Machine).AuthenticationSchemes.ShouldBeEmpty();
+	}
 }

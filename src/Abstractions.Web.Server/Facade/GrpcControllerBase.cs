@@ -1,5 +1,7 @@
 using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Norse.Abstractions.Components.Authorization;
 using Norse.Abstractions.Contracts;
 
 namespace Norse.Abstractions.Web.Server.Facade;
@@ -29,6 +31,7 @@ namespace Norse.Abstractions.Web.Server.Facade;
 ///     longer disagree by construction.
 /// </summary>
 [ApiController]
+[Authorize(Policy = NorsePolicies.Machine)]
 // Deliberately no class-level [Consumes] or [Produces] -- both are Swashbuckle-era prior art with no
 // job left here, and [Consumes] is actively harmful: it doubles as IAcceptsMetadata, and endpoint
 // routing's AcceptsMatcherPolicy partitions the match DFA on request Content-Type, making every
