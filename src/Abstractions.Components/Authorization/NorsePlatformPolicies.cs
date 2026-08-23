@@ -21,4 +21,10 @@ public static class NorsePlatformPolicies
 		// wrong, not merely stricter. This is the one place the RequireAssertion(_ => true) pattern the rest
 		// of this train deletes is actually correct.
 		policy.RequireAssertion(_ => true);
+
+	/// <summary>Every REST facade controller. Scheme routing is Midgard's lane selector's job, not this policy's.</summary>
+	/// <param name="policy">The builder to configure.</param>
+	[NorsePolicy(NorsePolicies.Machine)]
+	public static void Machine(AuthorizationPolicyBuilder policy) =>
+		policy.RequireAuthenticatedUser();
 }

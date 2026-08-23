@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Norse.Abstractions.Components.Authorization;
 using Norse.Abstractions.Contracts;
 using Norse.Abstractions.Web.Server.Facade;
 
@@ -205,6 +207,18 @@ public sealed class GrpcControllerBaseTests
 
 		attribute.ShouldNotBeNull();
 		((IRequestSizeLimitMetadata)attribute).MaxRequestBodySize.ShouldBe(1_048_576);
+	}
+
+	[Fact]
+	void The_class_requires_the_Machine_policy()
+	{
+		var attribute = typeof(GrpcControllerBase)
+			.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: false)
+			.Cast<AuthorizeAttribute>()
+			.SingleOrDefault();
+
+		attribute.ShouldNotBeNull();
+		attribute.Policy.ShouldBe(NorsePolicies.Machine);
 	}
 
 	[Fact]

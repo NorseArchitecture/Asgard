@@ -5,6 +5,7 @@
 	<ItemGroup>
 		<PackageReference Include="FluentValidation" Version="12.*" />
 		<ProjectReference Include="../Abstractions.Backend/Abstractions.Backend.csproj" />
+		<ProjectReference Include="../Abstractions.Components/Abstractions.Components.csproj" />
 		<ProjectReference
 			Include="../../gen/Abstractions.Web.Server.Generator/Abstractions.Web.Server.Generator.csproj"
 			OutputItemType="Analyzer"
