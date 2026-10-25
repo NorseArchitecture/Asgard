@@ -12,6 +12,7 @@ public sealed class TransportDispositionsTests
 	[InlineData(ErrorCategory.Conflict, 409, 6, true)]
 	[InlineData(ErrorCategory.NotFound, 404, 5, false)]
 	[InlineData(ErrorCategory.Erased, 410, 5, true)]
+	[InlineData(ErrorCategory.Indeterminate, 500, 4, true)]
 	[InlineData(ErrorCategory.Fault, 500, 13, true)]
 	[InlineData(ErrorCategory.MultipleMatches, 500, 13, true)]
 	[InlineData(ErrorCategory.Unspecified, 500, 2, false)]
