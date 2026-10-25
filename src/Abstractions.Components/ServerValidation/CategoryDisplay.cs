@@ -29,6 +29,7 @@ static class CategoryDisplay
 			ErrorCategory.Forbidden => "You don't have permission to do this.",
 			ErrorCategory.MultipleMatches => "More than one match was found.",
 			ErrorCategory.Erased => "This record no longer exists.",
+			ErrorCategory.Indeterminate => "This change may or may not have been saved. Reload to check before trying again.",
 			_ => "Something went wrong."
 		};
 

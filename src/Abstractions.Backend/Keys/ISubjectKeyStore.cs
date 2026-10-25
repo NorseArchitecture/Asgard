@@ -35,6 +35,15 @@ public interface ISubjectKeyStore
 	///     subject that has a key, or previously had one destroyed, returns the original receipt — the
 	///     ledger records one severance.
 	/// </summary>
+	/// <remarks>
+	///     Destruction is linearizable per subject, with <b>one authoritative receipt</b>. Authority begins
+	///     when the receipt is durably published; from then on every caller, however many race, and every
+	///     retry, across process restarts, receives that same receipt. A candidate minted in memory and lost
+	///     before publication carries no authority — such a failure must leave the key intact, so a retry
+	///     completes destruction under a fresh candidate. A destruction left pending (published but not
+	///     finished) is completed by the next call. A provider that cannot guarantee this is not a
+	///     conforming <see cref="ISubjectKeyStore" />.
+	/// </remarks>
 	/// <exception cref="KeyMissingException">
 	///     The subject never had a key in this store. Unknown-subject destruction is an incident, not a
 	///     fabricated no-op success — it never masquerades as erasure, per <see cref="KeyMissingException" />'s

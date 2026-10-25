@@ -7,6 +7,30 @@ public sealed class ProblemTests
 		((byte)ErrorCategory.Erased).ShouldBe((byte)11);
 
 	[Fact]
+	void Indeterminate_is_twelve_and_every_member_is_explicit()
+	{
+		((byte)ErrorCategory.Indeterminate).ShouldBe((byte)12);
+		Enum.GetValues<ErrorCategory>().ShouldBe([
+			ErrorCategory.Unspecified,
+			ErrorCategory.Validation,
+			ErrorCategory.NotFound,
+			ErrorCategory.Conflict,
+			ErrorCategory.LockedOut,
+			ErrorCategory.InvalidCredentials,
+			ErrorCategory.NotAllowed,
+			ErrorCategory.Unauthorized,
+			ErrorCategory.Forbidden,
+			ErrorCategory.Fault,
+			ErrorCategory.MultipleMatches,
+			ErrorCategory.Erased,
+			ErrorCategory.Indeterminate
+		]);
+		Enum.GetValues<ErrorCategory>()
+			.Select(category => (byte)category)
+			.ShouldBe(Enumerable.Range(0, 13).Select(value => (byte)value));
+	}
+
+	[Fact]
 	void Problem_carries_an_optional_erasure_receipt()
 	{
 		ErasureReceipt receipt = new(Guid.NewGuid(), DateTimeOffset.UtcNow);

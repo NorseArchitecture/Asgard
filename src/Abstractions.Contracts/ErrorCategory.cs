@@ -66,5 +66,13 @@ public enum ErrorCategory : byte
 	///     content tombstoning (retired into temporal history; no receipt) both answer with this
 	///     category, and both fold to 410 Gone at the REST edge.
 	/// </summary>
-	Erased = 11
+	Erased = 11,
+
+	/// <summary>The operation may or may not have taken effect; re-read before acting.</summary>
+	/// <remarks>
+	///     The answer when commit acknowledgement is lost — the write was sent, but the connection or
+	///     transaction outcome was lost before the store confirmed or refused it. Neither success nor a
+	///     definite failure: the caller re-reads current state before retrying or reporting.
+	/// </remarks>
+	Indeterminate = 12
 }

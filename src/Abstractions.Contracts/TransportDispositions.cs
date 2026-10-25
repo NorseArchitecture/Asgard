@@ -36,6 +36,7 @@ public static class TransportDispositions
 			ErrorCategory.Fault => new(500, 13, true),
 			ErrorCategory.MultipleMatches => new(500, 13, true),
 			ErrorCategory.Erased => new(410, 5, true),
+			ErrorCategory.Indeterminate => new(500, 4, true),
 			ErrorCategory.Unspecified => new(500, 2, false)
 		};
 #pragma warning restore CS8524
