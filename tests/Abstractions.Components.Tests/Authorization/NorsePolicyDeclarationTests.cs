@@ -28,6 +28,10 @@ public sealed class NorsePolicyDeclarationTests
 	}
 
 	[Fact]
+	void The_anonymous_role_name_is_the_one_the_browser_lane_mints() =>
+		NorseRoles.Anonymous.ShouldBe("anonymous");
+
+	[Fact]
 	void All_three_platform_policies_are_declared_in_metadata()
 	{
 		var declared = typeof(NorsePlatformPolicies)
