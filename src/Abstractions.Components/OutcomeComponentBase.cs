@@ -17,8 +17,19 @@ public abstract class OutcomeComponentBase : AsyncComponentBase
 	/// <summary>The failure of the last dispatch, rendered by the page's markup. Null until a dispatch fails.</summary>
 	protected Problem? Problem { get; private set; }
 
-	/// <summary>True while a dispatch is in flight — bind to the trigger's disabled state.</summary>
+	/// <summary>True while a dispatch is in flight. Click triggers bind <see cref="CanAct" />, not this.</summary>
 	protected bool IsDispatching { get; private set; }
+
+	/// <summary>
+	///     True when a click trigger would act: the renderer is interactive and no dispatch is in flight. Bind
+	///     every click trigger as <c>Disabled="!CanAct"</c>, so a statically rendered page (prerendered before
+	///     Blazor boots, or for good if the interactive runtime never starts) offers nothing to click. Loaders
+	///     are not gated: <see cref="DispatchAsync{T}(Func{CancellationToken, Task{Outcome{T}}}, Func{T, Task})" />
+	///     itself never reads this, so a load-time dispatch still runs during a static render and the page
+	///     arrives with its data.
+	/// </summary>
+	protected bool CanAct =>
+		RendererInfo.IsInteractive && !IsDispatching;
 
 	/// <summary>Synchronous-continuation convenience over the <see cref="Func{T, Task}" /> overload.</summary>
 	protected Task DispatchAsync<T>(Func<CancellationToken, Task<Outcome<T>>> call, Action<T> onSuccess)
