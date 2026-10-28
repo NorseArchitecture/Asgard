@@ -11,6 +11,12 @@ namespace Norse.Abstractions.Components.Tests;
 
 public sealed class FormValidationGateTests : BunitContext
 {
+	// bUnit throws MissingRendererInfoException on any RendererInfo read until one is set, and the
+	// base reads it on every submit. Set after the validator is registered: setting it creates the
+	// renderer, which locks the service provider.
+	static RendererInfo Interactive =>
+		new("Server", true);
+
 	[Fact]
 	async Task An_invalid_model_never_reaches_the_service()
 	{
@@ -46,6 +52,7 @@ public sealed class FormValidationGateTests : BunitContext
 		// submit returns at the IsSubmitting check before any await.
 		ModelValidator validator = new(TimeSpan.FromMilliseconds(300));
 		Services.AddScoped<IValidator<Model>>(_ => validator);
+		SetRendererInfo(Interactive);
 		var probe = Render<Probe>(parameters =>
 			parameters.Add(p => p.Request, new Model { Password = "aaaaaaaa" }));
 
@@ -64,6 +71,7 @@ public sealed class FormValidationGateTests : BunitContext
 		// The whole reason AsyncMode is fixed on: a validator with no failing sync rule at all, only
 		// an async rule that fails, must still be awaited to completion and gate dispatch.
 		Services.AddScoped<IValidator<Model>>(_ => new AsyncFailingModelValidator());
+		SetRendererInfo(Interactive);
 		var probe = Render<Probe>(parameters => parameters.Add(p => p.Request, new Model()));
 
 		var submitted = await probe.Instance.Submit();
@@ -79,6 +87,7 @@ public sealed class FormValidationGateTests : BunitContext
 		// The claim the one-shape design rests on: Login and CountryLookup carry no async rules, and
 		// must gate identically without their authors choosing anything.
 		Services.AddScoped<IValidator<Model>>(_ => new SyncModelValidator());
+		SetRendererInfo(Interactive);
 		var probe = Render<Probe>(parameters => parameters.Add(p => p.Request, new Model()));
 
 		var submitted = await probe.Instance.Submit();
@@ -96,6 +105,7 @@ public sealed class FormValidationGateTests : BunitContext
 		// uncanceled one — and the form would call the service on behalf of a component that no longer
 		// exists. Reading the token before the validation await is what makes disposal reach this call.
 		Services.AddScoped<IValidator<Model>>(_ => new ModelValidator(TimeSpan.FromMilliseconds(300)));
+		SetRendererInfo(Interactive);
 		// Held across the disposal: bUnit refuses Instance access once the component leaves the render
 		// tree, and the assertions are about what the component did after that point.
 		var probe = Render<Probe>(parameters =>
@@ -109,9 +119,28 @@ public sealed class FormValidationGateTests : BunitContext
 		probe.Calls.ShouldBe(0);
 	}
 
+	[Fact]
+	async Task A_static_render_renders_the_retry_message_instead_of_dispatching()
+	{
+		// The prerendered form a user submits before Blazor boots: valid-looking input or not, the
+		// post carries the initial model, so the form refuses on the page rather than calling out.
+		Services.AddScoped<IValidator<Model>>(_ => new ModelValidator(TimeSpan.Zero));
+		SetRendererInfo(new("Static", false));
+		var probe = Render<Probe>(parameters => parameters
+			.Add(p => p.Request, new Model { Password = "aaaaaaaa" })
+			.Add(p => p.WithSummary, true));
+
+		var submitted = await probe.InvokeAsync(probe.Instance.Submit);
+
+		submitted.ShouldBeFalse();
+		probe.Instance.Calls.ShouldBe(0);
+		probe.Find(".validation-message").TextContent.ShouldBe("This page hasn't finished loading — try again.");
+	}
+
 	IRenderedComponent<Probe> Arrange(Model model, TimeSpan roundTrip)
 	{
 		Services.AddScoped<IValidator<Model>>(_ => new ModelValidator(roundTrip));
+		SetRendererInfo(Interactive);
 		return Render<Probe>(parameters => parameters.Add(p => p.Request, model));
 	}
 
@@ -162,6 +191,11 @@ public sealed class FormValidationGateTests : BunitContext
 		[Parameter]
 		public Model Request { get; set; } = new();
 
+		// Opt-in: the summary re-renders on validation changes, which the facts that submit off the
+		// dispatcher cannot allow.
+		[Parameter]
+		public bool WithSummary { get; set; }
+
 		internal int Calls { get; private set; }
 
 		internal EditContext Context =>
@@ -181,6 +215,10 @@ public sealed class FormValidationGateTests : BunitContext
 			builder.AddAttribute(2, nameof(EditForm.ChildContent), (RenderFragment<EditContext>)(_ => child =>
 			{
 				child.OpenComponent<FormValidator>(0);
+				child.CloseComponent();
+				if (!WithSummary)
+					return;
+				child.OpenComponent<ValidationSummary>(1);
 				child.CloseComponent();
 			}));
 			builder.CloseComponent();
