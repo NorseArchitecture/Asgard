@@ -16,16 +16,26 @@ namespace Norse.Abstractions.Components;
 ///     attached <see cref="FormValidator" /> pass runs first, and an invalid model never reaches <c>call</c> — no
 ///     page needs to validate on its own. Total over the <see cref="Outcome{T}" /> domain
 ///     only: exceptions (a throwing transport, a throwing continuation) propagate to the circuit's error boundary
-///     deliberately — swallowing them here would be a silent fallback.
+///     deliberately — swallowing them here would be a silent fallback. Forms submit only when interactive: a
+///     statically rendered form's submit never dispatches (see <see cref="CanSubmit" />).
 /// </summary>
 public abstract class OutcomeFormComponentBase : AsyncComponentBase
 {
 	const string BufferSuffix = "Input";
+	const string NotInteractiveMessage = "This page hasn't finished loading — try again.";
 
 	EditContext? _editContext;
 
-	/// <summary>True while a submit is in flight — bind to the submit button's <c>Disabled</c> state.</summary>
+	/// <summary>True while a submit is in flight.</summary>
 	protected bool IsSubmitting { get; private set; }
+
+	/// <summary>
+	///     True when a submit would dispatch: the renderer is interactive and no submit is in flight. Bind the
+	///     submit button as <c>Disabled="!CanSubmit"</c>, so a statically rendered form (prerendered before
+	///     Blazor boots, or for good if the interactive runtime never starts) offers no submit at all.
+	/// </summary>
+	protected bool CanSubmit =>
+		RendererInfo.IsInteractive && !IsSubmitting;
 
 	/// <summary>
 	///     Creates (once) the form's <see cref="EditContext" /> with the stamped-request
@@ -78,7 +88,8 @@ public abstract class OutcomeFormComponentBase : AsyncComponentBase
 	/// </summary>
 	/// <returns>
 	///     <c>true</c> only when <paramref name="onSuccess" /> ran to completion. <c>false</c> covers every way it
-	///     did not — the model failed validation, a submit was already in flight, the component was disposed while
+	///     did not — the form is not interactive (a model-level retry message is rendered instead), the model
+	///     failed validation, a submit was already in flight, the component was disposed while
 	///     validation was still running, or the call came back <c>Failed</c> and the problem is now rendered on the
 	///     form. Callers that keep their own
 	///     status UI (a banner to leave standing, a scroll position to hold) branch on this rather than assuming a
@@ -101,6 +112,15 @@ public abstract class OutcomeFormComponentBase : AsyncComponentBase
 			|| attached is not true)
 			throw new InvalidOperationException(
 				"No <FormValidator/> in this form — validation would pass vacuously.");
+		// Fail loud, never dispatch: these forms bind their model interactively and are never bound
+		// from a POST, so a statically rendered form's submit (a post made before Blazor boots, or
+		// with the interactive runtime down) carries the page's initial model, not the user's input.
+		// Dispatching it would report a false success or a misleading error.
+		if (!RendererInfo.IsInteractive)
+		{
+			editContext.ApplyServerErrors(Problem.ModelError(ErrorCategory.Validation, NotInteractiveMessage));
+			return false;
+		}
 		if (IsSubmitting)
 			return false;
 
