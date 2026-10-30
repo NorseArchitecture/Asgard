@@ -1,9 +1,34 @@
+using Bunit;
+using Bunit.TestDoubles;
+using Microsoft.Extensions.DependencyInjection;
 using Norse.Abstractions.Contracts;
 
 namespace Norse.Abstractions.Components.Tests;
 
-public sealed class OutcomeComponentBaseTests
+// A BunitContext for the reauthentication facts, which need the injected NavigationManager; the
+// dispatch-state facts still new their Harness up directly, since none of them navigates.
+public sealed class OutcomeComponentBaseTests : BunitContext
 {
+	const string Landing = "/Account/Login?returnUrl=%2FAccount%2FManage%2FPasskeys";
+
+	public static TheoryData<string> NonLocalNextUrls =>
+	[
+		"//evil.example",
+		"/\t/evil.example",
+		"/\n/evil.example",
+	];
+
+	public static TheoryData<ErrorCategory, string?> OtherFailures => new()
+	{
+		{ ErrorCategory.Forbidden, null },
+		{ ErrorCategory.Forbidden, "some-other-code" },
+		{ ErrorCategory.Unauthorized, NorseErrorCodes.ReauthenticationRequired },
+		{ ErrorCategory.Fault, null },
+	};
+
+	BunitNavigationManager Navigation =>
+		Services.GetRequiredService<BunitNavigationManager>();
+
 	sealed record FakeResult;
 
 	sealed class Harness : OutcomeComponentBase
@@ -18,6 +43,9 @@ public sealed class OutcomeComponentBaseTests
 			where T : notnull =>
 			DispatchAsync(call, onSuccess);
 	}
+
+	static Problem Reauthentication(string? nextUrl) =>
+		new() { Category = ErrorCategory.Forbidden, Code = NorseErrorCodes.ReauthenticationRequired, NextUrl = nextUrl };
 
 	static Outcome<FakeResult> Success() =>
 		Outcome<FakeResult>.Ok(new FakeResult());
@@ -127,5 +155,56 @@ public sealed class OutcomeComponentBaseTests
 				_ => throw new InvalidOperationException("boom")));
 
 		harness.Dispatching.ShouldBeFalse();
+	}
+
+	[Fact]
+	async Task A_reauthentication_failure_with_a_local_next_url_navigates_to_it()
+	{
+		var harness = Render<Harness>().Instance;
+
+		await harness.Dispatch(_ => Task.FromResult<Outcome<FakeResult>>(new Failed(Reauthentication(Landing))), _ => { });
+
+		var entry = Navigation.History.ShouldHaveSingleItem();
+		entry.Uri.ShouldBe(Landing);
+		entry.Options.ForceLoad.ShouldBeFalse();
+		harness.CapturedProblem.ShouldBeNull();
+	}
+
+	[Theory]
+	[MemberData(nameof(NonLocalNextUrls))]
+	async Task A_reauthentication_failure_with_a_non_local_next_url_renders_the_problem(string nextUrl)
+	{
+		var harness = Render<Harness>().Instance;
+		var problem = Reauthentication(nextUrl);
+
+		await harness.Dispatch(_ => Task.FromResult<Outcome<FakeResult>>(new Failed(problem)), _ => { });
+
+		Navigation.History.ShouldBeEmpty();
+		harness.CapturedProblem.ShouldBeSameAs(problem);
+	}
+
+	[Theory]
+	[MemberData(nameof(OtherFailures))]
+	async Task A_next_url_on_any_other_failure_never_navigates(ErrorCategory category, string? code)
+	{
+		var harness = Render<Harness>().Instance;
+		Problem problem = new() { Category = category, Code = code, NextUrl = Landing };
+
+		await harness.Dispatch(_ => Task.FromResult<Outcome<FakeResult>>(new Failed(problem)), _ => { });
+
+		Navigation.History.ShouldBeEmpty();
+		harness.CapturedProblem.ShouldBeSameAs(problem);
+	}
+
+	[Fact]
+	async Task A_failure_without_next_url_renders_the_problem_as_today()
+	{
+		var harness = Render<Harness>().Instance;
+		var problem = Reauthentication(null);
+
+		await harness.Dispatch(_ => Task.FromResult<Outcome<FakeResult>>(new Failed(problem)), _ => { });
+
+		Navigation.History.ShouldBeEmpty();
+		harness.CapturedProblem.ShouldBeSameAs(problem);
 	}
 }
