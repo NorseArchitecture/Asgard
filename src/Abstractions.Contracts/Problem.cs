@@ -25,6 +25,20 @@ public sealed record Problem
 	public ErasureReceipt? Receipt { get; init; }
 
 	/// <summary>
+	///     A machine-readable refinement of <see cref="Category" /> a client can act on (for example
+	///     <see cref="NorseErrorCodes.ReauthenticationRequired" />); <see langword="null" /> when the category says
+	///     everything there is to say.
+	/// </summary>
+	public string? Code { get; init; }
+
+	/// <summary>
+	///     The server-authored next hop for a client that can act on <see cref="Code" />. Advisory only: a client
+	///     navigates to it solely when the code calls for it and the value passes its own local-navigation check,
+	///     and renders the problem otherwise.
+	/// </summary>
+	public string? NextUrl { get; init; }
+
+	/// <summary>
 	///     Creates a <see cref="Problem" /> carrying one model-level message — the empty-string key both
 	///     Blazor and FluentValidation reserve for errors not tied to any field — so call sites never
 	///     hand-build the single-entry dictionary literal.

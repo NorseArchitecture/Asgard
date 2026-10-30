@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components;
 using Norse.Abstractions.Contracts;
 using Norse.Primitives;
 
@@ -10,10 +11,16 @@ namespace Norse.Abstractions.Components;
 ///     <c>Failed</c> lands in <see cref="Problem" /> for the page's markup to render. Total over the
 ///     <see cref="Outcome{T}" /> domain only: exceptions (a throwing transport, a throwing
 ///     continuation) propagate to the circuit's error boundary deliberately — swallowing them here
-///     would be a silent fallback.
+///     would be a silent fallback. The one failure that does not land in <see cref="Problem" /> is a
+///     reauthentication refusal with a local next hop: the page navigates to it instead (see
+///     <see cref="LocalNavigation" />).
 /// </summary>
 public abstract class OutcomeComponentBase : AsyncComponentBase
 {
+	// Named for its one use, never plain Navigation: derived pages inject their own NavigationManager by that name.
+	[Inject]
+	NavigationManager ReauthenticationNavigation { get; set; } = null!;
+
 	/// <summary>The failure of the last dispatch, rendered by the page's markup. Null until a dispatch fails.</summary>
 	protected Problem? Problem { get; private set; }
 
@@ -83,6 +90,10 @@ public abstract class OutcomeComponentBase : AsyncComponentBase
 			{
 				case Success<T>(var value):
 					await onSuccess(value);
+					break;
+				// A soft hop, like every server-authored NextUrl: the re-proving sign-in completes through its own seam.
+				case Failed(var problem) when LocalNavigation.IsReauthenticationLanding(problem, out var nextUrl):
+					ReauthenticationNavigation.NavigateTo(nextUrl);
 					break;
 				case Failed(var problem):
 					Problem = problem;

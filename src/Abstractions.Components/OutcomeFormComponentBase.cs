@@ -1,4 +1,5 @@
 using Blazilla;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Norse.Abstractions.Contracts;
 using Norse.Abstractions.Components.ServerValidation;
@@ -17,7 +18,9 @@ namespace Norse.Abstractions.Components;
 ///     page needs to validate on its own. Total over the <see cref="Outcome{T}" /> domain
 ///     only: exceptions (a throwing transport, a throwing continuation) propagate to the circuit's error boundary
 ///     deliberately — swallowing them here would be a silent fallback. Forms submit only when interactive: a
-///     statically rendered form's submit never dispatches (see <see cref="CanSubmit" />).
+///     statically rendered form's submit never dispatches (see <see cref="CanSubmit" />). A reauthentication
+///     refusal with a local next hop is not rendered on the form: the page navigates to it instead (see
+///     <see cref="LocalNavigation" />).
 /// </summary>
 public abstract class OutcomeFormComponentBase : AsyncComponentBase
 {
@@ -25,6 +28,10 @@ public abstract class OutcomeFormComponentBase : AsyncComponentBase
 	const string NotInteractiveMessage = "This page hasn't finished loading — try again.";
 
 	EditContext? _editContext;
+
+	// Named for its one use, never plain Navigation: derived pages inject their own NavigationManager by that name.
+	[Inject]
+	NavigationManager ReauthenticationNavigation { get; set; } = null!;
 
 	/// <summary>True while a submit is in flight.</summary>
 	protected bool IsSubmitting { get; private set; }
@@ -91,7 +98,7 @@ public abstract class OutcomeFormComponentBase : AsyncComponentBase
 	///     did not — the form is not interactive (a model-level retry message is rendered instead), the model
 	///     failed validation, a submit was already in flight, the component was disposed while
 	///     validation was still running, or the call came back <c>Failed</c> and the problem is now rendered on the
-	///     form. Callers that keep their own
+	///     form (or, for a reauthentication refusal, the page is navigating to its next hop). Callers that keep their own
 	///     status UI (a banner to leave standing, a scroll position to hold) branch on this rather than assuming a
 	///     completed <see cref="Task" /> means the submit landed.
 	/// </returns>
@@ -156,6 +163,10 @@ public abstract class OutcomeFormComponentBase : AsyncComponentBase
 					editContext.ClearServerErrors();
 					await onSuccess(value);
 					return true;
+				// A soft hop, like every server-authored NextUrl: the re-proving sign-in completes through its own seam.
+				case Failed(var problem) when LocalNavigation.IsReauthenticationLanding(problem, out var nextUrl):
+					ReauthenticationNavigation.NavigateTo(nextUrl);
+					break;
 				case Failed(var problem):
 					editContext.ApplyServerErrors(problem);
 					break;

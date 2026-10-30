@@ -25,6 +25,7 @@ public sealed class NorsePolicyDeclarationTests
 		NorsePolicies.Anonymous.ShouldBe("Norse.Anonymous");
 		NorsePolicies.Probe.ShouldBe("Norse.Probe");
 		NorsePolicies.Machine.ShouldBe("Norse.Machine");
+		NorsePolicies.RecentAuthentication.ShouldBe("Norse.RecentAuthentication");
 	}
 
 	[Fact]
@@ -32,7 +33,7 @@ public sealed class NorsePolicyDeclarationTests
 		NorseRoles.Anonymous.ShouldBe("anonymous");
 
 	[Fact]
-	void All_three_platform_policies_are_declared_in_metadata()
+	void All_four_platform_policies_are_declared_in_metadata()
 	{
 		var declared = typeof(NorsePlatformPolicies)
 			.GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -40,7 +41,9 @@ public sealed class NorsePolicyDeclarationTests
 			.Where(name => name is not null)
 			.ToArray();
 
-		declared.ShouldBe([NorsePolicies.Anonymous, NorsePolicies.Probe, NorsePolicies.Machine], ignoreOrder: true);
+		declared.ShouldBe(
+			[NorsePolicies.Anonymous, NorsePolicies.Probe, NorsePolicies.Machine, NorsePolicies.RecentAuthentication],
+			ignoreOrder: true);
 	}
 
 	[Fact]
@@ -62,13 +65,18 @@ public sealed class NorsePolicyDeclarationTests
 			.ShouldContain(r => r is DenyAnonymousAuthorizationRequirement);
 
 	[Fact]
-	void The_probe_policy_builds_despite_requiring_nothing()
+	void Probe_allows_any_lane()
 	{
 		// AuthorizationPolicy's constructor throws InvalidOperationException on an empty requirement set
 		// (verified against aspnetcore AuthorizationPolicy.cs), so "requires nothing" cannot be expressed as
-		// zero requirements. It is one always-succeed assertion, which is a different thing from
-		// RequireAuthenticatedUser and is exactly right here: a kubelet carries no principal at all.
-		Build(NorsePolicies.Probe).Requirements.Count.ShouldBe(1);
+		// zero requirements. The lane opt-out plus the always-succeed assertion is exactly right here: a
+		// kubelet carries no principal at all, so the policy names no lane and demands no principal.
+		var requirements = Build(NorsePolicies.Probe).Requirements;
+
+		requirements.Count.ShouldBe(2);
+		requirements.ShouldContain(r => r is AnyLaneRequirement);
+		requirements.ShouldContain(r => r is AssertionRequirement);
+		requirements.ShouldNotContain(r => r is LaneRequirement);
 	}
 
 	[Fact]
@@ -77,16 +85,37 @@ public sealed class NorsePolicyDeclarationTests
 			.ShouldNotContain(r => r is DenyAnonymousAuthorizationRequirement);
 
 	[Fact]
-	void The_machine_policy_requires_a_principal() =>
-		Build(NorsePolicies.Machine).Requirements
-			.ShouldContain(r => r is DenyAnonymousAuthorizationRequirement);
+	void Machine_requires_machine_lane_and_facade_audience()
+	{
+		var requirements = Build(NorsePolicies.Machine).Requirements;
+
+		requirements.Count.ShouldBe(2);
+		requirements.OfType<LaneRequirement>().Single().Lanes.ShouldBe([NorseLanes.Machine]);
+		requirements.OfType<AudienceRequirement>().Single().ShouldBe(new(NorseAudiences.Facade, null));
+	}
+
+	[Fact]
+	void Recent_authentication_allows_any_lane_and_requires_freshness()
+	{
+		var requirements = Build(NorsePolicies.RecentAuthentication).Requirements;
+
+		requirements.Count.ShouldBe(2);
+		requirements.ShouldContain(r => r is AnyLaneRequirement);
+		requirements.ShouldContain(r => r is RecentAuthenticationRequirement);
+	}
+
+	[Fact]
+	void The_anonymous_policy_declares_no_lane_of_its_own() =>
+		// Midgard's generated AddNorsePolicies() closes it to the Identity lane; the declaration is unchanged.
+		Build(NorsePolicies.Anonymous).Requirements
+			.ShouldNotContain(r => r is LaneRequirement || r is AnyLaneRequirement);
 
 	[Fact]
 	void The_machine_policy_does_not_pin_a_scheme()
 	{
 		// Asgard cannot reference NorseSchemes.Machine (Midgard) -- the dependency wall runs one direction.
-		// Scheme selection is entirely NorseLaneSelector's job (Midgard); this policy only checks the
-		// principal, exactly like Anonymous and Probe, neither of which pins a scheme either.
+		// Scheme selection is entirely NorseLaneSelector's job (Midgard); this policy checks the stamped
+		// lane and the audience instead, and like Anonymous and Probe it pins no scheme.
 		Build(NorsePolicies.Machine).AuthenticationSchemes.ShouldBeEmpty();
 	}
 }
